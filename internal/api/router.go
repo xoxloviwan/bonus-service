@@ -9,6 +9,7 @@ func Router() http.Handler {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", index)
 	mux.HandleFunc("/api/user/register", h.Register)
+	mux.HandleFunc("/api/user/login", h.Login)
 	return logger(mux)
 }
 
