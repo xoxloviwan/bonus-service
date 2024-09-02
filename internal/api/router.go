@@ -4,10 +4,12 @@ import (
 	"net/http"
 )
 
-func Router() *http.ServeMux {
+func Router() http.Handler {
+	h := Handler{}
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", index)
-	return mux
+	mux.HandleFunc("/api/user/register", h.Register)
+	return logger(mux)
 }
 
 func index(w http.ResponseWriter, r *http.Request) {
@@ -15,6 +17,7 @@ func index(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
+	w.Write([]byte("Привет"))
 
 	// Common code for all requests can go here...
 

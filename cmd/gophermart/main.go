@@ -1,8 +1,8 @@
 package main
 
 import (
+	"fmt"
 	"gophermart/internal/api"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -18,7 +18,7 @@ func main() {
 	go func() {
 		errCh <- http.ListenAndServe(port, router)
 	}()
-	log.Printf("service listening on %s", port)
+	api.Log.Info(fmt.Sprintf("service listening on %s", port))
 
 	sigCh := make(chan os.Signal, 1) // we need to reserve to buffer size 1, so the notifier are not blocked
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGINT)
@@ -26,10 +26,11 @@ func main() {
 	for {
 		select {
 		case <-sigCh:
-			log.Printf("service stopped by SIGINT")
+			api.Log.Info("service stopped by SIGINT")
 			return
 		case err := <-errCh:
-			log.Fatalf("service stopped with error:\n%s", err)
+			api.Log.Error(fmt.Sprintf("service stopped with error:\n%s", err))
+			os.Exit(1)
 		}
 	}
 }
