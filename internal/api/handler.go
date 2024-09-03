@@ -141,3 +141,22 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Authorization", "Bearer "+tkn)
 	w.WriteHeader(http.StatusOK)
 }
+
+type BalanceResponse struct {
+	Balance float64 `json:"current"`
+	Bonuses int     `json:"withdrawn"`
+}
+
+func (h *Handler) Balance(w http.ResponseWriter, r *http.Request) {
+	fakeBalance := BalanceResponse{ //TODO
+		Balance: 1000,
+		Bonuses: 0,
+	}
+	w.Header().Set("Content-Type", "application/json")
+	resp, err := json.Marshal(fakeBalance)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(resp)
+}

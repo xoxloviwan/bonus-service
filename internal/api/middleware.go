@@ -19,7 +19,7 @@ func init() {
 	Log = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: lvl}))
 }
 
-func logger(h http.Handler) http.Handler {
+func loggingMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		reqID++
 		Log.Info(
@@ -40,5 +40,17 @@ func logger(h http.Handler) http.Handler {
 			slog.Duration("duration", m.Duration),
 			slog.Int64("size", m.Written),
 		)
+	})
+}
+
+func authMiddleware(h http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		auth := r.Header.Get("Authorization")
+		if auth == "" {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		// TODO: validate auth
+		h.ServeHTTP(w, r) // обслуживание оригинального запроса
 	})
 }

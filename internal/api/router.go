@@ -2,40 +2,23 @@ package api
 
 import (
 	"net/http"
+
+	"github.com/go-pkgz/routegroup"
 )
 
 func Router() http.Handler {
 	h := Handler{}
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", index)
-	mux.HandleFunc("/api/user/register", h.Register)
-	mux.HandleFunc("/api/user/login", h.Login)
-	return logger(mux)
-}
+	router := routegroup.New(http.NewServeMux())
+	router.Use(loggingMiddleware)
 
-func index(w http.ResponseWriter, r *http.Request) {
-	if r.URL.Path != "/" {
-		http.NotFound(w, r)
-		return
-	}
-	w.Write([]byte("Привет"))
+	// create a new group for the /api/user path
+	apiRouter := router.Mount("/api/user")
+	apiRouter.HandleFunc("POST /register", h.Register)
+	apiRouter.HandleFunc("POST /login", h.Login)
 
-	// Common code for all requests can go here...
+	protectedGroup := apiRouter.Group()
+	protectedGroup.Use(authMiddleware)
+	protectedGroup.HandleFunc("GET /balance", h.Balance)
 
-	switch r.Method {
-	case http.MethodGet:
-
-		// Handle the GET request...
-
-	case http.MethodPost:
-		// Handle the POST request...
-
-	case http.MethodOptions:
-		w.Header().Set("Allow", "GET, POST, OPTIONS")
-		w.WriteHeader(http.StatusNoContent)
-
-	default:
-		w.Header().Set("Allow", "GET, POST, OPTIONS")
-		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
-	}
+	return router
 }
