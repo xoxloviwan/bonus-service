@@ -9,14 +9,35 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-const port = ":8080"
+const PORT = ":8080"
+const DB_URL = "postgresql://postgres:12345@localhost:5432/postgres?sslmode=disable"
 
-func main() {
-	router := api.Router()
+func fatal(err error) int {
+	api.Log.Error(fmt.Sprintf("service stopped with error: %s\n", err))
+	return 1
+}
+
+func mainWithExitCode() int {
+	dbpool, err := pgxpool.New(context.Background(), DB_URL)
+	if err != nil {
+		err = fmt.Errorf("unable to create connection pool: %w", err)
+		return fatal(err)
+	}
+	defer dbpool.Close()
+
+	store := api.NewStore(dbpool)
+	err = api.CreateUsersTable(context.Background(), store)
+	if err != nil {
+		return fatal(err)
+	}
+
+	router := api.Router(store)
 	server := &http.Server{
-		Addr:    port,
+		Addr:    PORT,
 		Handler: router,
 	}
 	errCh := make(chan error)
@@ -24,7 +45,7 @@ func main() {
 	go func() {
 		errCh <- server.ListenAndServe()
 	}()
-	api.Log.Info(fmt.Sprintf("service listening on %s", port))
+	api.Log.Info(fmt.Sprintf("service listening on %s", PORT))
 
 	sigCh := make(chan os.Signal, 1) // we need to reserve to buffer size 1, so the notifier are not blocked
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGINT)
@@ -38,13 +59,17 @@ func main() {
 			err := server.Shutdown(ctx)
 			if err != nil {
 				api.Log.Error(fmt.Sprintf("shutdown error: %s", err))
-				os.Exit(1)
+				return 1
 			}
 			api.Log.Info("service gracefully stopped")
-			return
+			return 0
 		case err := <-errCh:
-			api.Log.Error(fmt.Sprintf("service stopped with error: %s", err))
-			os.Exit(1)
+			return fatal(err)
 		}
 	}
+}
+
+func main() {
+	code := mainWithExitCode()
+	os.Exit(code)
 }

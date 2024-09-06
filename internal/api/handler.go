@@ -2,17 +2,28 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
-	"crypto/sha256"
+	"golang.org/x/crypto/bcrypt"
 
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type Handler struct{}
+type Store struct {
+	*pgxpool.Pool
+}
+
+func NewStore(pool *pgxpool.Pool) Store {
+	return Store{pool}
+}
+
+type Handler struct {
+	store Store
+}
 
 type Creds struct {
 	User string `json:"login"`
@@ -52,7 +63,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	var userId int
-	userId, err = newUser(creds)
+	userId, err = newUser(h.store, creds)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusConflict)
 		return
@@ -68,20 +79,43 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func newUser(creds Creds) (int, error) {
-	h := sha256.New()
-	// передаём байты для хеширования
-	h.Write([]byte(creds.Pwd))
-	// вычисляем хеш
-	hash := h.Sum(nil)
-	fmt.Println(hash)
-	// TODO записать пару логин/хеш в БД
-	return 0, nil
+func CreateUsersTable(ctx context.Context, db Store) error {
+	_, err := db.Exec(ctx,
+		`CREATE TABLE IF NOT EXISTS users (
+			id bigint GENERATED ALWAYS AS IDENTITY,
+			login text NOT NULL UNIQUE,
+			password text NOT NULL)`)
+	return err
 }
 
-func authUser(creds Creds) (int, error) {
-	// TODO
-	return 0, nil
+func newUser(store Store, creds Creds) (int, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(creds.Pwd), 0)
+	if err != nil {
+		return 0, err
+	}
+	row := store.QueryRow(context.Background(), "INSERT INTO users (login, password) VALUES ($1, $2) RETURNING id", creds.User, hash)
+	var userId int
+	err = row.Scan(&userId)
+	if err != nil {
+		return 0, err
+	}
+	return userId, nil
+}
+
+func authUser(store Store, creds Creds) (int, error) {
+	var err error
+	row := store.QueryRow(context.Background(), "SELECT id, password FROM users WHERE login = $1", creds.User)
+	var userId int
+	var hash []byte
+	err = row.Scan(&userId, &hash)
+	if err != nil {
+		return 0, err
+	}
+	err = bcrypt.CompareHashAndPassword(hash, []byte(creds.Pwd))
+	if err != nil {
+		return 0, err
+	}
+	return userId, nil
 }
 
 // BuildJWT создаёт токен и возвращает его в виде строки.
@@ -127,7 +161,7 @@ func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var userId int
-	userId, err = authUser(creds)
+	userId, err = authUser(h.store, creds)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusUnauthorized)
 		return
