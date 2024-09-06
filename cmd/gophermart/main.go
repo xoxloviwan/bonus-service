@@ -10,19 +10,17 @@ import (
 	"syscall"
 	"time"
 
+	conf "gophermart/internal/config"
 	"gophermart/internal/store"
 )
-
-const PORT = ":8080"
-const DB_URL = "postgresql://postgres:12345@localhost:5432/postgres?sslmode=disable"
 
 func fatal(err error) int {
 	api.Log.Error(fmt.Sprintf("service stopped with error: %s\n", err))
 	return 1
 }
 
-func mainWithExitCode() int {
-	st, err := store.NewStore(context.Background(), DB_URL)
+func mainWithExitCode(cfg conf.Config) int {
+	st, err := store.NewStore(context.Background(), cfg.DatabaseURI)
 	if err != nil {
 		err = fmt.Errorf("unable to create connection pool: %w", err)
 		return fatal(err)
@@ -35,7 +33,7 @@ func mainWithExitCode() int {
 
 	router := api.Router(st)
 	server := &http.Server{
-		Addr:    PORT,
+		Addr:    cfg.RunAddress,
 		Handler: router,
 	}
 	errCh := make(chan error)
@@ -43,7 +41,7 @@ func mainWithExitCode() int {
 	go func() {
 		errCh <- server.ListenAndServe()
 	}()
-	api.Log.Info(fmt.Sprintf("service listening on %s", PORT))
+	api.Log.Info(fmt.Sprintf("service listening on %s", cfg.RunAddress))
 
 	sigCh := make(chan os.Signal, 1) // we need to reserve to buffer size 1, so the notifier are not blocked
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGINT)
@@ -68,6 +66,7 @@ func mainWithExitCode() int {
 }
 
 func main() {
-	code := mainWithExitCode()
+	cfg := conf.InitConfig()
+	code := mainWithExitCode(cfg)
 	os.Exit(code)
 }
