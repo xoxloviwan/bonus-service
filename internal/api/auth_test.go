@@ -28,19 +28,19 @@ type want struct {
 	statusCode  int
 }
 
-type auth_tescases []struct {
+type authTescases []struct {
 	name       string
 	method     string
 	url        string
 	reqBody    string
-	mockUserId int
+	mockuserID int
 	mockHash   []byte
 	mockErr    error
 	want       want
 }
 
 func TestHandler_Register(t *testing.T) {
-	tests := auth_tescases{
+	tests := authTescases{
 		{
 			name:   "register_status_code_200",
 			url:    "/api/user/register",
@@ -85,7 +85,7 @@ func TestHandler_Register(t *testing.T) {
 			want: want{
 				statusCode: http.StatusConflict,
 			},
-			mockUserId: 0,
+			mockuserID: 0,
 			mockErr:    errors.New("failed to add user"),
 			reqBody:    `{"login": "user", "password": "123456"}`,
 		},
@@ -102,7 +102,7 @@ func TestHandler_Register(t *testing.T) {
 
 			m := h.store.(*mock.MockStore)
 
-			m.EXPECT().AddUser(gomock.Any(), gomock.Any()).Return(tt.mockUserId, tt.mockErr).Times(1)
+			m.EXPECT().AddUser(gomock.Any(), gomock.Any()).Return(tt.mockuserID, tt.mockErr).Times(1)
 
 			h.Register(w, req)
 
@@ -115,7 +115,7 @@ func TestHandler_Register(t *testing.T) {
 }
 
 func TestHandler_Login(t *testing.T) {
-	tests := auth_tescases{
+	tests := authTescases{
 		{
 			name:   "login_status_code_200",
 			url:    "/api/user/login",
@@ -164,7 +164,7 @@ func TestHandler_Login(t *testing.T) {
 			want: want{
 				statusCode: http.StatusUnauthorized,
 			},
-			mockUserId: 0,
+			mockuserID: 0,
 			reqBody:    `{"login": "user", "password": "123456"}`,
 		},
 	}
@@ -180,7 +180,7 @@ func TestHandler_Login(t *testing.T) {
 
 			m := h.store.(*mock.MockStore)
 
-			m.EXPECT().GetUser(gomock.Any()).Return(tt.mockHash, tt.mockUserId, tt.mockErr).Times(1)
+			m.EXPECT().GetUser(gomock.Any()).Return(tt.mockHash, tt.mockuserID, tt.mockErr).Times(1)
 
 			h.Login(w, req)
 

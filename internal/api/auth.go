@@ -17,24 +17,24 @@ type Creds struct {
 	Pwd  string `json:"password"`
 }
 
-type commonAuth func(creds Creds) (userId int, httpCode int, err error)
+type commonAuth func(creds Creds) (userID int, httpCode int, err error)
 
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	AuthCmnHandler(w, r,
-		func(creds Creds) (userId int, httpCode int, err error) {
-			userId, err = newUser(h.store, creds)
+		func(creds Creds) (userID int, httpCode int, err error) {
+			userID, err = newUser(h.store, creds)
 			httpCode = http.StatusConflict
-			return userId, httpCode, err
+			return userID, httpCode, err
 		},
 	)
 }
 
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	AuthCmnHandler(w, r,
-		func(creds Creds) (userId int, httpCode int, err error) {
-			userId, err = authUser(h.store, creds)
+		func(creds Creds) (userID int, httpCode int, err error) {
+			userID, err = authUser(h.store, creds)
 			httpCode = http.StatusUnauthorized
-			return userId, httpCode, err
+			return userID, httpCode, err
 		},
 	)
 }
@@ -61,15 +61,15 @@ func AuthCmnHandler(w http.ResponseWriter, r *http.Request, auth commonAuth) {
 		http.Error(w, "empty login or password", http.StatusBadRequest)
 		return
 	}
-	var userId, httpErrCode int
-	userId, httpErrCode, err = auth(creds)
+	var userID, httpErrCode int
+	userID, httpErrCode, err = auth(creds)
 	if err != nil {
 		http.Error(w, err.Error(), httpErrCode)
 		return
 	}
 
 	var tkn string
-	tkn, err = BuildJWT(userId)
+	tkn, err = BuildJWT(userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -87,7 +87,7 @@ func newUser(store Store, creds Creds) (int, error) {
 }
 
 func authUser(store Store, creds Creds) (int, error) {
-	hash, userId, err := store.GetUser(creds.User)
+	hash, userID, err := store.GetUser(creds.User)
 	if err != nil {
 		return 0, errors.New("auth failed")
 	}
@@ -95,18 +95,18 @@ func authUser(store Store, creds Creds) (int, error) {
 	if err != nil {
 		return 0, errors.New("auth failed")
 	}
-	return userId, nil
+	return userID, nil
 }
 
 // Claims — структура утверждений, которая включает стандартные утверждения и
-// одно пользовательское UserID
+// одно пользовательское userID
 type Claims struct {
 	jwt.RegisteredClaims
-	UserID int
+	userID int
 }
 
-const TOKEN_EXP = time.Hour * 3
-const SECRET_KEY = "supersecretkey"
+const TokenExp = time.Hour * 3
+const SecretKey = "supersecretkey"
 
 // BuildJWT создаёт токен и возвращает его в виде строки.
 func BuildJWT(user int) (string, error) {
@@ -114,14 +114,14 @@ func BuildJWT(user int) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, Claims{
 		RegisteredClaims: jwt.RegisteredClaims{
 			// когда создан токен
-			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TOKEN_EXP)),
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenExp)),
 		},
 		// собственное утверждение
-		UserID: user,
+		userID: user,
 	})
 
 	// создаём строку токена
-	tokenString, err := token.SignedString([]byte(SECRET_KEY))
+	tokenString, err := token.SignedString([]byte(SecretKey))
 	if err != nil {
 		return "", err
 	}

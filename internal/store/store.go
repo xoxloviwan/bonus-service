@@ -29,19 +29,19 @@ func (db Store) CreateUsersTable(ctx context.Context) error {
 
 func (db Store) AddUser(login string, hash []byte) (int, error) {
 	row := db.QueryRow(context.Background(), "INSERT INTO users (login, password) VALUES ($1, $2) RETURNING id", login, hash)
-	var userId int
-	err := row.Scan(&userId)
+	var userID int
+	err := row.Scan(&userID)
 	if err != nil {
 		return 0, err
 	}
-	return userId, nil
+	return userID, nil
 }
 
-func (db Store) GetUser(login string) (hash []byte, userId int, err error) {
+func (db Store) GetUser(login string) (hash []byte, userID int, err error) {
 	row := db.QueryRow(context.Background(), "SELECT id, password FROM users WHERE login = $1", login)
-	err = row.Scan(&userId, &hash)
+	err = row.Scan(&userID, &hash)
 	if err != nil {
 		return nil, 0, err
 	}
-	return hash, userId, nil
+	return hash, userID, nil
 }
