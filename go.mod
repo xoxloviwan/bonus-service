@@ -6,6 +6,7 @@ require (
 	github.com/felixge/httpsnoop v1.0.4
 	github.com/go-pkgz/routegroup v1.1.1
 	github.com/golang-jwt/jwt/v4 v4.5.0
+	github.com/golang/mock v1.6.0
 	github.com/jackc/pgx/v5 v5.6.0
 	golang.org/x/crypto v0.17.0
 )
