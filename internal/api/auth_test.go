@@ -107,6 +107,8 @@ func TestHandler_Register(t *testing.T) {
 			h.Register(w, req)
 
 			result := w.Result()
+			defer result.Body.Close()
+
 			if tt.want.statusCode != result.StatusCode {
 				t.Errorf("got status %v, want %v", result.StatusCode, tt.want.statusCode)
 			}
@@ -185,6 +187,8 @@ func TestHandler_Login(t *testing.T) {
 			h.Login(w, req)
 
 			result := w.Result()
+			defer result.Body.Close()
+
 			if tt.want.statusCode != result.StatusCode {
 				t.Errorf("got status %v, want %v", result.StatusCode, tt.want.statusCode)
 			}
