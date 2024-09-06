@@ -10,7 +10,7 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/jackc/pgx/v5/pgxpool"
+	"gophermart/internal/store"
 )
 
 const PORT = ":8080"
@@ -22,20 +22,18 @@ func fatal(err error) int {
 }
 
 func mainWithExitCode() int {
-	dbpool, err := pgxpool.New(context.Background(), DB_URL)
+	st, err := store.NewStore(context.Background(), DB_URL)
 	if err != nil {
 		err = fmt.Errorf("unable to create connection pool: %w", err)
 		return fatal(err)
 	}
-	defer dbpool.Close()
-
-	store := api.NewStore(dbpool)
-	err = api.CreateUsersTable(context.Background(), store)
+	defer st.Close()
+	err = st.CreateUsersTable(context.Background())
 	if err != nil {
 		return fatal(err)
 	}
 
-	router := api.Router(store)
+	router := api.Router(st)
 	server := &http.Server{
 		Addr:    PORT,
 		Handler: router,

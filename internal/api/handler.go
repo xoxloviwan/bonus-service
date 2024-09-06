@@ -3,16 +3,11 @@ package api
 import (
 	"encoding/json"
 	"net/http"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-type Store struct {
-	*pgxpool.Pool
-}
-
-func NewStore(pool *pgxpool.Pool) Store {
-	return Store{pool}
+type Store interface {
+	AddUser(login string, hash []byte) (int, error)
+	GetUser(login string) ([]byte, int, error)
 }
 
 type Handler struct {

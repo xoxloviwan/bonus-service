@@ -2,7 +2,6 @@ package api
 
 import (
 	"bytes"
-	"context"
 	"encoding/json"
 	"errors"
 	"net/http"
@@ -67,37 +66,18 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func CreateUsersTable(ctx context.Context, db Store) error {
-	_, err := db.Exec(ctx,
-		`CREATE TABLE IF NOT EXISTS users (
-			id bigint GENERATED ALWAYS AS IDENTITY,
-			login text NOT NULL UNIQUE,
-			password text NOT NULL)`)
-	return err
-}
-
 func newUser(store Store, creds Creds) (int, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(creds.Pwd), 0)
 	if err != nil {
 		return 0, err
 	}
-	row := store.QueryRow(context.Background(), "INSERT INTO users (login, password) VALUES ($1, $2) RETURNING id", creds.User, hash)
-	var userId int
-	err = row.Scan(&userId)
-	if err != nil {
-		return 0, err
-	}
-	return userId, nil
+	return store.AddUser(creds.User, hash)
 }
 
 func authUser(store Store, creds Creds) (int, error) {
-	var err error
-	row := store.QueryRow(context.Background(), "SELECT id, password FROM users WHERE login = $1", creds.User)
-	var userId int
-	var hash []byte
-	err = row.Scan(&userId, &hash)
+	hash, userId, err := store.GetUser(creds.User)
 	if err != nil {
-		return 0, err
+		return 0, errors.New("auth failed")
 	}
 	err = bcrypt.CompareHashAndPassword(hash, []byte(creds.Pwd))
 	if err != nil {
