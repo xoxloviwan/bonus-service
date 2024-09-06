@@ -17,17 +17,29 @@ type Creds struct {
 	Pwd  string `json:"password"`
 }
 
-// Claims — структура утверждений, которая включает стандартные утверждения и
-// одно пользовательское UserID
-type Claims struct {
-	jwt.RegisteredClaims
-	UserID int
-}
-
-const TOKEN_EXP = time.Hour * 3
-const SECRET_KEY = "supersecretkey"
+type commonAuth func(creds Creds) (userId int, httpCode int, err error)
 
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
+	AuthCmnHandler(w, r,
+		func(creds Creds) (userId int, httpCode int, err error) {
+			userId, err = newUser(h.store, creds)
+			httpCode = http.StatusConflict
+			return userId, httpCode, err
+		},
+	)
+}
+
+func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
+	AuthCmnHandler(w, r,
+		func(creds Creds) (userId int, httpCode int, err error) {
+			userId, err = authUser(h.store, creds)
+			httpCode = http.StatusUnauthorized
+			return userId, httpCode, err
+		},
+	)
+}
+
+func AuthCmnHandler(w http.ResponseWriter, r *http.Request, auth commonAuth) {
 	if r.Header.Get("Content-Type") != "application/json" ||
 		r.Method != http.MethodPost {
 		w.WriteHeader(http.StatusBadRequest)
@@ -49,10 +61,10 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "empty login or password", http.StatusBadRequest)
 		return
 	}
-	var userId int
-	userId, err = newUser(h.store, creds)
+	var userId, httpErrCode int
+	userId, httpErrCode, err = auth(creds)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusConflict)
+		http.Error(w, err.Error(), httpErrCode)
 		return
 	}
 
@@ -86,6 +98,16 @@ func authUser(store Store, creds Creds) (int, error) {
 	return userId, nil
 }
 
+// Claims — структура утверждений, которая включает стандартные утверждения и
+// одно пользовательское UserID
+type Claims struct {
+	jwt.RegisteredClaims
+	UserID int
+}
+
+const TOKEN_EXP = time.Hour * 3
+const SECRET_KEY = "supersecretkey"
+
 // BuildJWT создаёт токен и возвращает его в виде строки.
 func BuildJWT(user int) (string, error) {
 	// создаём новый токен с алгоритмом подписи HS256 и утверждениями — Claims
@@ -106,40 +128,4 @@ func BuildJWT(user int) (string, error) {
 
 	// возвращаем строку токена
 	return tokenString, nil
-}
-
-func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
-	if r.Header.Get("Content-Type") != "application/json" ||
-		r.Method != http.MethodPost {
-		w.WriteHeader(http.StatusBadRequest)
-		return
-	}
-
-	creds := Creds{}
-	var buf bytes.Buffer
-	// читаем тело запроса
-	_, err := buf.ReadFrom(r.Body)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-	if err = json.Unmarshal(buf.Bytes(), &creds); err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	var userId int
-	userId, err = authUser(h.store, creds)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusUnauthorized)
-		return
-	}
-	var tkn string
-	tkn, err = BuildJWT(userId)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Authorization", "Bearer "+tkn)
-	w.WriteHeader(http.StatusOK)
 }
