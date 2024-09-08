@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"net/http"
 	"testing"
@@ -102,7 +103,7 @@ func TestHandler_Register(t *testing.T) {
 
 			m := h.store.(*mock.MockStore)
 
-			m.EXPECT().AddUser(gomock.Any(), gomock.Any()).Return(tt.mockuserID, tt.mockErr).Times(1)
+			m.EXPECT().AddUser(context.Background(), gomock.Any(), gomock.Any()).Return(tt.mockuserID, tt.mockErr).Times(1)
 
 			h.Register(w, req)
 
@@ -182,7 +183,7 @@ func TestHandler_Login(t *testing.T) {
 
 			m := h.store.(*mock.MockStore)
 
-			m.EXPECT().GetUser(gomock.Any()).Return(tt.mockHash, tt.mockuserID, tt.mockErr).Times(1)
+			m.EXPECT().GetUser(context.Background(), gomock.Any()).Return(tt.mockHash, tt.mockuserID, tt.mockErr).Times(1)
 
 			h.Login(w, req)
 

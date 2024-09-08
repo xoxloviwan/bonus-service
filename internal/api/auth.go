@@ -2,8 +2,10 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -22,7 +24,7 @@ type commonAuth func(creds Creds) (userID int, httpCode int, err error)
 func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 	AuthCmnHandler(w, r,
 		func(creds Creds) (userID int, httpCode int, err error) {
-			userID, err = newUser(h.store, creds)
+			userID, err = newUser(r.Context(), h.store, creds)
 			httpCode = http.StatusConflict
 			return userID, httpCode, err
 		},
@@ -32,7 +34,7 @@ func (h *Handler) Register(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	AuthCmnHandler(w, r,
 		func(creds Creds) (userID int, httpCode int, err error) {
-			userID, err = authUser(h.store, creds)
+			userID, err = authUser(r.Context(), h.store, creds)
 			httpCode = http.StatusUnauthorized
 			return userID, httpCode, err
 		},
@@ -78,16 +80,16 @@ func AuthCmnHandler(w http.ResponseWriter, r *http.Request, auth commonAuth) {
 	w.WriteHeader(http.StatusOK)
 }
 
-func newUser(store Store, creds Creds) (int, error) {
+func newUser(ctx context.Context, store Store, creds Creds) (int, error) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(creds.Pwd), 0)
 	if err != nil {
 		return 0, err
 	}
-	return store.AddUser(creds.User, hash)
+	return store.AddUser(ctx, creds.User, hash)
 }
 
-func authUser(store Store, creds Creds) (int, error) {
-	hash, userID, err := store.GetUser(creds.User)
+func authUser(ctx context.Context, store Store, creds Creds) (int, error) {
+	hash, userID, err := store.GetUser(ctx, creds.User)
 	if err != nil {
 		return 0, errors.New("auth failed")
 	}
@@ -102,7 +104,7 @@ func authUser(store Store, creds Creds) (int, error) {
 // одно пользовательское userID
 type Claims struct {
 	jwt.RegisteredClaims
-	userID int
+	UserID int
 }
 
 const TokenExp = time.Hour * 3
@@ -117,7 +119,7 @@ func BuildJWT(user int) (string, error) {
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(TokenExp)),
 		},
 		// собственное утверждение
-		userID: user,
+		UserID: user,
 	})
 
 	// создаём строку токена
@@ -128,4 +130,23 @@ func BuildJWT(user int) (string, error) {
 
 	// возвращаем строку токена
 	return tokenString, nil
+}
+
+func GetUserId(tokenString string) (int, error) {
+	claims := &Claims{}
+	token, err := jwt.ParseWithClaims(tokenString, claims,
+		func(t *jwt.Token) (interface{}, error) {
+			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
+			}
+			return []byte(SecretKey), nil
+		})
+	if err != nil {
+		return -1, err
+	}
+
+	if !token.Valid {
+		return -1, errors.New("invalid token")
+	}
+	return claims.UserID, nil
 }

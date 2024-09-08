@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"log/slog"
 	"net/http"
 	"os"
@@ -43,6 +44,8 @@ func loggingMiddleware(h http.Handler) http.Handler {
 	})
 }
 
+type userIDCtxKey struct{}
+
 func authMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		auth := r.Header.Get("Authorization")
@@ -50,7 +53,15 @@ func authMiddleware(h http.Handler) http.Handler {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		// TODO: validate auth
-		h.ServeHTTP(w, r) // обслуживание оригинального запроса
+		auth = auth[7:] // cut 'Bearer ' prefix
+		userID, err := GetUserId(auth)
+		if err != nil {
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+
+		ctx := context.WithValue(r.Context(), userIDCtxKey{}, userID)
+		r = r.WithContext(ctx)
+		h.ServeHTTP(w, r)
 	})
 }

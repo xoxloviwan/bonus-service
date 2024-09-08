@@ -30,6 +30,10 @@ func mainWithExitCode(cfg conf.Config) int {
 	if err != nil {
 		return fatal(err)
 	}
+	err = st.CreateOrdersTable(context.Background())
+	if err != nil {
+		return fatal(err)
+	}
 
 	router := api.Router(st)
 	server := &http.Server{
