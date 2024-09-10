@@ -8,18 +8,21 @@ import (
 )
 
 const (
-	addressDefault     = "localhost:8080"
-	databaseURIDefault = "postgresql://postgres:12345@localhost:5432/postgres?sslmode=disable"
+	addressDefault        = "localhost:8080"
+	accrualAddressDefault = "localhost:8090"
+	databaseURIDefault    = "postgresql://postgres:12345@localhost:5432/postgres?sslmode=disable"
 )
 
 var (
 	runAddress  = flag.String("a", addressDefault, "server adress")
 	databaseURI = flag.String("d", databaseURIDefault, "database uri")
+	accrualAddr = flag.String("r", accrualAddressDefault, "accrual system address")
 )
 
 type Config struct {
-	RunAddress  string `envDefault:""`
-	DatabaseURI string `envDefault:""`
+	RunAddress           string `envDefault:""`
+	DatabaseURI          string `envDefault:""`
+	AccrualSystemAddress string `envDefault:""`
 }
 
 func InitConfig() Config {
@@ -41,6 +44,12 @@ func InitConfig() Config {
 		cfg.DatabaseURI = *databaseURI
 	} else if cfg.DatabaseURI == "" {
 		cfg.DatabaseURI = databaseURIDefault
+	}
+
+	if *accrualAddr != accrualAddressDefault {
+		cfg.AccrualSystemAddress = *accrualAddr
+	} else if cfg.AccrualSystemAddress == "" {
+		cfg.AccrualSystemAddress = accrualAddressDefault
 	}
 
 	return cfg
