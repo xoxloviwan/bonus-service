@@ -21,7 +21,9 @@ func setupHandler(t *testing.T) *Handler {
 
 	mockStore := mock.NewMockStore(ctrl)
 
-	return &Handler{store: mockStore}
+	mockPoller := NewMockPoller(ctrl)
+
+	return &Handler{store: mockStore, poller: mockPoller}
 }
 
 type want struct {

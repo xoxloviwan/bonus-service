@@ -19,8 +19,13 @@ type Store interface {
 	AddOrder(ctx context.Context, orderID int, userID int) error
 }
 
+type Poller interface {
+	Push(orderID int)
+}
+
 type Handler struct {
-	store Store
+	store  Store
+	poller Poller
 }
 
 // borrowed from benchfmt/internal/bytesconv/atoi.go
@@ -78,6 +83,7 @@ func (h *Handler) NewOrder(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+	h.poller.Push(orderID)
 	w.WriteHeader(http.StatusAccepted)
 }
 

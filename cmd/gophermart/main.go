@@ -11,6 +11,7 @@ import (
 	"time"
 
 	conf "gophermart/internal/config"
+	"gophermart/internal/polling"
 	"gophermart/internal/store"
 )
 
@@ -34,8 +35,9 @@ func mainWithExitCode(cfg conf.Config) int {
 	if err != nil {
 		return fatal(err)
 	}
+	pollster := polling.NewPollster(cfg.AccrualSystemAddress, st)
 
-	router := api.Router(st)
+	router := api.Router(st, pollster)
 	server := &http.Server{
 		Addr:    cfg.RunAddress,
 		Handler: router,

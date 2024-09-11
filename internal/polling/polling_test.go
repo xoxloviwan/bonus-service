@@ -97,7 +97,7 @@ func TestPolling(t *testing.T) {
 				orderStr := strconv.Itoa(tt.ac.Order)
 				// Test request parameters
 				if req.URL.String() != "/api/orders/"+orderStr {
-					t.Errorf("Polling() got url = %v, want url %v", req.URL.String(), "/api/orders/"+orderStr)
+					t.Errorf("polling() got url = %v, want url %v", req.URL.String(), "/api/orders/"+orderStr)
 				}
 
 				if tt.acStatusCode == http.StatusNoContent {
@@ -122,7 +122,7 @@ func TestPolling(t *testing.T) {
 			// Close the server when test finishes
 			defer server.Close()
 
-			err := Polling(context.Background(), m, server.URL, tt.ac.Order)
+			err := polling(context.Background(), m, server.URL, tt.ac.Order)
 			if err != tt.wantErr {
 				t.Errorf("Polling() error = %v, wantErr %v", err, tt.wantErr)
 			}

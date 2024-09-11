@@ -6,8 +6,11 @@ import (
 	"github.com/go-pkgz/routegroup"
 )
 
-func Router(store Store) http.Handler {
-	h := Handler{store: store}
+func Router(store Store, poller Poller) http.Handler {
+	h := Handler{
+		store,
+		poller,
+	}
 	router := routegroup.New(http.NewServeMux())
 	router.Use(loggingMiddleware)
 

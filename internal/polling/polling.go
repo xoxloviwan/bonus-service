@@ -27,7 +27,7 @@ type Store interface {
 	UpdateOrderInfo(ctx context.Context, orderID int, status string, accrual *int) error
 }
 
-func Polling(ctx context.Context, store Store, accrualAddr string, orderID int) error {
+func polling(ctx context.Context, store Store, accrualAddr string, orderID int) error {
 	url := fmt.Sprintf("%s/api/orders/%d", accrualAddr, orderID)
 
 	orderInfo := accrualResp{}

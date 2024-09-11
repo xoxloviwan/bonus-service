@@ -102,3 +102,8 @@ func (db Store) AddOrder(ctx context.Context, orderID int, userID int) error {
 	}
 	return nil
 }
+
+func (db Store) UpdateOrderInfo(ctx context.Context, orderID int, status string, accrual *int) error {
+	// TODO
+	return nil
+}
