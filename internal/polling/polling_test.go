@@ -48,6 +48,7 @@ func TestPolling(t *testing.T) {
 				Status: "NEW",
 			},
 			acStatusCode: http.StatusNoContent,
+			wantErr:      types.ErrOrderNotFound,
 		},
 		{
 			name: "polling_accrual_status_code_429",

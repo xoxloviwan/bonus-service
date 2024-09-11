@@ -42,8 +42,8 @@ func Polling(ctx context.Context, store Store, accrualAddr string, orderID int) 
 	}
 
 	if resp.StatusCode() == http.StatusNoContent {
-		api.Log.Error(fmt.Sprintf("Order %d not found in accrual system", orderID))
-		return nil
+		api.Log.Error(types.ErrOrderNotFound.Error())
+		return types.ErrOrderNotFound
 	}
 
 	if resp.StatusCode() == http.StatusTooManyRequests {
