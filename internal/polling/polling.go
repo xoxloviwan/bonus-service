@@ -71,5 +71,11 @@ func Polling(ctx context.Context, store Store, accrualAddr string, orderID int) 
 		return err
 	}
 
-	return store.UpdateOrderInfo(ctx, orderID, orderInfo.Status, orderInfo.Accrual)
+	if err := store.UpdateOrderInfo(ctx, orderID, orderInfo.Status, orderInfo.Accrual); err != nil {
+		return err
+	}
+	if orderInfo.Status == "REGISTERED" || orderInfo.Status == "PROCESSING" {
+		return types.ErrOrderInProcess
+	}
+	return nil
 }

@@ -33,7 +33,7 @@ func TestPolling(t *testing.T) {
 		wantErr      error
 	}{
 		{
-			name: "polling_accrual_status_code_200",
+			name: "polling_accrual_status_code_200_PROCESSED",
 			ac: accrualResp{
 				Order:   7992723465,
 				Status:  "PROCESSED",
@@ -58,6 +58,32 @@ func TestPolling(t *testing.T) {
 			},
 			acStatusCode: http.StatusTooManyRequests,
 			wantErr:      types.ErrManyRequests,
+		},
+		{
+			name: "polling_accrual_status_code_200_REGISTERED",
+			ac: accrualResp{
+				Order:  7992723465,
+				Status: "REGISTERED",
+			},
+			acStatusCode: http.StatusOK,
+			wantErr:      types.ErrOrderInProcess,
+		},
+		{
+			name: "polling_accrual_status_code_200_PROCESSING",
+			ac: accrualResp{
+				Order:  7992723465,
+				Status: "PROCESSING",
+			},
+			acStatusCode: http.StatusOK,
+			wantErr:      types.ErrOrderInProcess,
+		},
+		{
+			name: "polling_accrual_status_code_200_INVALID",
+			ac: accrualResp{
+				Order:  7992723465,
+				Status: "INVALID",
+			},
+			acStatusCode: http.StatusOK,
 		},
 	}
 	for _, tt := range tests {
