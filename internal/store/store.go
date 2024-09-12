@@ -104,6 +104,12 @@ func (db Store) AddOrder(ctx context.Context, orderID int, userID int) error {
 }
 
 func (db Store) UpdateOrderInfo(ctx context.Context, orderID int, status string, accrual *int) error {
-	// TODO
-	return nil
+	_, err := db.Exec(ctx, "UPDATE orders SET status = @status, processed_at = @processed_at, accrual = @accrual WHERE id = @id",
+		pgx.NamedArgs{
+			"id":           orderID,
+			"status":       status,
+			"processed_at": time.Now(),
+			"accrual":      *accrual,
+		})
+	return err
 }
