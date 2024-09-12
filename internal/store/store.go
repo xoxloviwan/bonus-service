@@ -88,10 +88,10 @@ func (db Store) AddOrder(ctx context.Context, orderID int, userID int) error {
 	}
 	if ct.RowsAffected() == 0 {
 		row := db.QueryRow(ctx, "SELECT status, user_id, uploaded_at FROM orders WHERE id = @id", pgx.NamedArgs{"id": orderID})
-		var uploaded_at time.Time
+		var uploadedAt time.Time
 		var status string
 		var userIDFromOrder int
-		err = row.Scan(&status, &userIDFromOrder, &uploaded_at)
+		err = row.Scan(&status, &userIDFromOrder, &uploadedAt)
 		if err != nil {
 			return err
 		}

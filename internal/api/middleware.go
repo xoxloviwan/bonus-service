@@ -57,7 +57,7 @@ func authMiddleware(h http.Handler) http.Handler {
 			return
 		}
 		auth = auth[7:] // cut 'Bearer ' prefix
-		userID, err := GetUserId(auth)
+		userID, err := GetUserID(auth)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
