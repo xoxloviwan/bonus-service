@@ -27,7 +27,7 @@ func TestHandler_NewOrder(t *testing.T) {
 			name:    "new_order_status_code_202",
 			method:  http.MethodPost,
 			reqBody: "7992723465",
-			url:     "/api/user/order",
+			url:     "/api/user/orders",
 			want: want{
 				statusCode: http.StatusAccepted,
 			},
@@ -36,7 +36,7 @@ func TestHandler_NewOrder(t *testing.T) {
 			name:    "new_order_status_code_200",
 			method:  http.MethodPost,
 			reqBody: "7992723465",
-			url:     "/api/user/order",
+			url:     "/api/user/orders",
 			want: want{
 				statusCode: http.StatusOK,
 			},
@@ -46,7 +46,7 @@ func TestHandler_NewOrder(t *testing.T) {
 			name:    "new_order_status_code_400",
 			method:  http.MethodPost,
 			reqBody: "",
-			url:     "/api/user/order",
+			url:     "/api/user/orders",
 			want: want{
 				statusCode: http.StatusBadRequest,
 			},
@@ -55,7 +55,7 @@ func TestHandler_NewOrder(t *testing.T) {
 			name:    "new_order_status_code_422",
 			method:  http.MethodPost,
 			reqBody: "12121",
-			url:     "/api/user/order",
+			url:     "/api/user/orders",
 			want: want{
 				statusCode: http.StatusUnprocessableEntity,
 			},
@@ -64,7 +64,7 @@ func TestHandler_NewOrder(t *testing.T) {
 			name:    "new_order_status_code_409",
 			method:  http.MethodPost,
 			reqBody: "7992723465",
-			url:     "/api/user/order",
+			url:     "/api/user/orders",
 			want: want{
 				statusCode: http.StatusConflict,
 			},
@@ -74,7 +74,7 @@ func TestHandler_NewOrder(t *testing.T) {
 			name:    "new_order_status_code_500",
 			method:  http.MethodPost,
 			reqBody: "7992723465",
-			url:     "/api/user/order",
+			url:     "/api/user/orders",
 			want: want{
 				statusCode: http.StatusInternalServerError,
 			},

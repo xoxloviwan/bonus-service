@@ -36,7 +36,7 @@ func main() {
 			resp, err := client.R().
 				SetBody(orderID).
 				SetAuthToken("eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE3MjYyMTMzNzgsIlVzZXJJRCI6MX0.yUTYgftFBf6mBwx839O77doZXmRPqVlS-H05oRrbOtA").
-				Post("http://localhost:8080/api/user/order")
+				Post("http://localhost:8080/api/user/orders")
 			if err != nil {
 				fmt.Println(err)
 				return
