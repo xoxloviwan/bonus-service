@@ -9,7 +9,7 @@ import (
 
 const (
 	addressDefault        = "localhost:8080"
-	accrualAddressDefault = "localhost:8090"
+	accrualAddressDefault = "http://localhost:8090"
 	databaseURIDefault    = "postgresql://postgres:12345@localhost:5432/postgres?sslmode=disable"
 )
 

@@ -8,14 +8,15 @@ import (
 	"regexp"
 	"strconv"
 
-	"gophermart/internal/api"
+	"sync/atomic"
+
 	"gophermart/internal/types"
 
 	"github.com/go-resty/resty/v2"
 )
 
-var Downtime int
-var RPM int
+var Downtime atomic.Uint64
+var RPM atomic.Uint64
 
 type accrualResp struct {
 	Order   int    `json:"order,string"`
@@ -42,23 +43,23 @@ func polling(ctx context.Context, store Store, accrualAddr string, orderID int) 
 	}
 
 	if resp.StatusCode() == http.StatusNoContent {
-		api.Log.Error(types.ErrOrderNotFound.Error())
 		return types.ErrOrderNotFound
 	}
 
 	if resp.StatusCode() == http.StatusTooManyRequests {
-		var err error
-		Downtime, err = strconv.Atoi(resp.Header().Get("Retry-After"))
+		retryAfter, err := strconv.Atoi(resp.Header().Get("Retry-After"))
 		if err != nil {
 			return fmt.Errorf("unexpected header Retry-After: %s", resp.Header().Get("Retry-After"))
 		}
+		Downtime.Store(uint64(retryAfter))
 		expr := regexp.MustCompile(`No more than (\d+) requests per minute allowed`)
 		matches := expr.FindStringSubmatch(resp.String())
 		if len(matches) >= 1 {
-			RPM, err = strconv.Atoi(matches[1])
+			rpm, err := strconv.Atoi(matches[1])
 			if err != nil {
 				return err
 			}
+			RPM.Store(uint64(rpm))
 		}
 		return types.ErrManyRequests
 	}

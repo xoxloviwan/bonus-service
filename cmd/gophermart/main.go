@@ -37,6 +37,9 @@ func mainWithExitCode(cfg conf.Config) int {
 	}
 	pollster := polling.NewPollster(cfg.AccrualSystemAddress, st)
 
+	go pollster.Run()
+	defer pollster.Stop()
+
 	router := api.Router(st, pollster)
 	server := &http.Server{
 		Addr:    cfg.RunAddress,
