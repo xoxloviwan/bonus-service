@@ -24,7 +24,7 @@ func loggingMiddleware(h http.Handler) http.Handler {
 		reqID++
 		Log.Info(
 			"REQ",
-			slog.Int("id", reqID),
+			slog.Int("request_id", reqID),
 			slog.String("method", r.Method),
 			slog.String("uri", r.URL.String()),
 			slog.String("ip", r.RemoteAddr),
