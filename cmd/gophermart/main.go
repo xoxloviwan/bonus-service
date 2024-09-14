@@ -31,7 +31,8 @@ func mainWithExitCode(cfg conf.Config) int {
 		return fatal(err)
 	}
 
-	router := api.Router(st)
+	handler := api.NewHandler(st)
+	router := api.Router(handler)
 	server := &http.Server{
 		Addr:    cfg.RunAddress,
 		Handler: router,

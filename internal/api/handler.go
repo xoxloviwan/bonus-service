@@ -14,6 +14,10 @@ type Handler struct {
 	store Store
 }
 
+func NewHandler(store Store) *Handler {
+	return &Handler{store}
+}
+
 type BalanceResponse struct {
 	Balance float64 `json:"current"`
 	Bonuses int     `json:"withdrawn"`
