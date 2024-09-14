@@ -14,21 +14,16 @@ import (
 	"gophermart/internal/store"
 )
 
-func fatal(err error) int {
-	api.Log.Error(fmt.Sprintf("service stopped with error: %s\n", err))
-	return 1
-}
-
-func mainWithExitCode(cfg conf.Config) int {
+func mainWithError(cfg conf.Config) error {
 	st, err := store.NewStore(context.Background(), cfg.DatabaseURI)
 	if err != nil {
 		err = fmt.Errorf("unable to create connection pool: %w", err)
-		return fatal(err)
+		return err
 	}
 	defer st.Close()
 	err = st.CreateUsersTable(context.Background())
 	if err != nil {
-		return fatal(err)
+		return err
 	}
 
 	handler := api.NewHandler(st)
@@ -56,19 +51,20 @@ func mainWithExitCode(cfg conf.Config) int {
 			err := server.Shutdown(ctx)
 			if err != nil {
 				api.Log.Error(fmt.Sprintf("shutdown error: %s", err))
-				return 1
+				return err
 			}
 			api.Log.Info("service gracefully stopped")
-			return 0
+			return nil
 		case err := <-errCh:
-			return fatal(err)
+			return err
 		}
 	}
 }
 
 func main() {
 	cfg := conf.InitConfig()
-	if err := mainWithExitCode(cfg); err != nil {
-	    os.Exit(1)
+	if err := mainWithError(cfg); err != nil {
+		api.Log.Error(fmt.Sprintf("service stopped with error: %s\n", err))
+		os.Exit(1)
 	}
 }
