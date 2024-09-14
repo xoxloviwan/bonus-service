@@ -6,15 +6,12 @@ import (
 	"net/http"
 	"os"
 
-	"sync/atomic"
-
 	"github.com/felixge/httpsnoop"
+	"github.com/google/uuid"
 )
 
 var Log *slog.Logger
 var lvl *slog.LevelVar
-
-var reqNum atomic.Uint64
 
 func init() {
 	lvl = new(slog.LevelVar)
@@ -24,11 +21,10 @@ func init() {
 
 func loggingMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		reqID := reqNum.Load()
-		reqNum.Add(1)
+		reqID := uuid.New().String()
 		Log.Info(
 			"REQ",
-			slog.Uint64("id", reqID),
+			slog.String("request_id", reqID),
 			slog.String("method", r.Method),
 			slog.String("uri", r.URL.String()),
 			slog.String("ip", r.RemoteAddr),
@@ -39,7 +35,7 @@ func loggingMiddleware(h http.Handler) http.Handler {
 		m := httpsnoop.CaptureMetrics(h, w, r)
 		Log.Info(
 			"RES",
-			slog.Uint64("id", reqID),
+			slog.String("request_id", reqID),
 			slog.Int("status", m.Code),
 			slog.Duration("duration", m.Duration),
 			slog.Int64("size", m.Written),
