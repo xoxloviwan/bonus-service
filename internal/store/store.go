@@ -18,7 +18,7 @@ func NewStore(ctx context.Context, connString string) (*Store, error) {
 	return &Store{dbpool}, nil
 }
 
-func (db Store) CreateUsersTable(ctx context.Context) error {
+func (db *Store) CreateUsersTable(ctx context.Context) error {
 	_, err := db.Exec(ctx,
 		`CREATE TABLE IF NOT EXISTS users (
 			id bigint GENERATED ALWAYS AS IDENTITY,
