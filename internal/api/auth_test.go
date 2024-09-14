@@ -52,7 +52,7 @@ func TestHandler_Register(t *testing.T) {
 			reqBody: `{"login": "user", "password": "123456"}`,
 		},
 		{
-			name:   "register_status_code_400",
+			name:   "register_with_invalid_json_body_should_repond_status_code_400",
 			url:    "/api/user/register",
 			method: http.MethodPost,
 			want: want{
