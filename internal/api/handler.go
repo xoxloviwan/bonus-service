@@ -87,6 +87,10 @@ func (h *Handler) NewOrder(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
+func NewHandler(store Store) *Handler {
+	return &Handler{store}
+}
+
 type BalanceResponse struct {
 	Total   float64 `json:"current"`
 	Debited float64 `json:"withdrawn"`

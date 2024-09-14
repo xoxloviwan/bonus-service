@@ -1,8 +1,8 @@
 package config
 
 import (
+	"errors"
 	"flag"
-	"log"
 
 	"github.com/caarlos0/env/v11"
 )
@@ -25,15 +25,15 @@ type Config struct {
 	AccrualSystemAddress string `envDefault:""`
 }
 
-func InitConfig() Config {
+func InitConfig() (Config, error) {
 	cfg := Config{}
 	opts := env.Options{UseFieldNameByDefault: true}
 	if err := env.ParseWithOptions(&cfg, opts); err != nil {
-		log.Fatalf("Error parsing env: %v", err)
+		return cfg, err
 	}
 	flag.Parse()
 	if len(flag.Args()) > 0 {
-		log.Fatal("Too many arguments")
+		return cfg, errors.New("too many arguments")
 	}
 	if *runAddress != addressDefault {
 		cfg.RunAddress = *runAddress
@@ -52,5 +52,5 @@ func InitConfig() Config {
 		cfg.AccrualSystemAddress = accrualAddressDefault
 	}
 
-	return cfg
+	return cfg, nil
 }

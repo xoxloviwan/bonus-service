@@ -14,15 +14,15 @@ type Store struct {
 	*pgxpool.Pool
 }
 
-func NewStore(ctx context.Context, connString string) (Store, error) {
+func NewStore(ctx context.Context, connString string) (*Store, error) {
 	dbpool, err := pgxpool.New(ctx, connString)
 	if err != nil {
-		return Store{}, err
+		return &Store{}, err
 	}
-	return Store{dbpool}, nil
+	return &Store{dbpool}, nil
 }
 
-func (db Store) CreateUsersTable(ctx context.Context) error {
+func (db *Store) CreateUsersTable(ctx context.Context) error {
 	_, err := db.Exec(ctx,
 		`CREATE TABLE IF NOT EXISTS users (
 			id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -37,7 +37,7 @@ func (db Store) CreateUsersTable(ctx context.Context) error {
 	return err
 }
 
-func (db Store) AddUser(ctx context.Context, login string, hash []byte) (int, error) {
+func (db *Store) AddUser(ctx context.Context, login string, hash []byte) (int, error) {
 	row := db.QueryRow(ctx, "INSERT INTO users (login, password) VALUES ($1, $2) RETURNING id", login, hash)
 	var userID int
 	err := row.Scan(&userID)
@@ -47,7 +47,7 @@ func (db Store) AddUser(ctx context.Context, login string, hash []byte) (int, er
 	return userID, nil
 }
 
-func (db Store) GetUser(ctx context.Context, login string) (hash []byte, userID int, err error) {
+func (db *Store) GetUser(ctx context.Context, login string) (hash []byte, userID int, err error) {
 	row := db.QueryRow(ctx, "SELECT id, password FROM users WHERE login = $1", login)
 	err = row.Scan(&userID, &hash)
 	if err != nil {
@@ -56,7 +56,7 @@ func (db Store) GetUser(ctx context.Context, login string) (hash []byte, userID 
 	return hash, userID, nil
 }
 
-func (db Store) CreateOrdersTable(ctx context.Context) error {
+func (db *Store) CreateOrdersTable(ctx context.Context) error {
 	_, err := db.Exec(ctx,
 		`CREATE TABLE IF NOT EXISTS orders (
 			id bigint NOT NULL PRIMARY KEY,
@@ -68,7 +68,7 @@ func (db Store) CreateOrdersTable(ctx context.Context) error {
 	return err
 }
 
-func (db Store) AddOrder(ctx context.Context, orderID int, userID int) error {
+func (db *Store) AddOrder(ctx context.Context, orderID int, userID int) error {
 	t := time.Now()
 	ct, err := db.Exec(ctx,
 		`INSERT INTO orders (
@@ -108,7 +108,7 @@ func (db Store) AddOrder(ctx context.Context, orderID int, userID int) error {
 	return nil
 }
 
-func (db Store) UpdateOrderInfo(ctx context.Context, orderID int, status string, accrual *int) error {
+func (db *Store) UpdateOrderInfo(ctx context.Context, orderID int, status string, accrual *int) error {
 	_, err := db.Exec(ctx, "UPDATE orders SET status = @status, processed_at = @processed_at, accrual = @accrual WHERE id = @id",
 		pgx.NamedArgs{
 			"id":           orderID,
