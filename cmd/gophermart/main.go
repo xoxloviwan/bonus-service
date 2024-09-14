@@ -68,6 +68,7 @@ func mainWithExitCode(cfg conf.Config) int {
 
 func main() {
 	cfg := conf.InitConfig()
-	code := mainWithExitCode(cfg)
-	os.Exit(code)
+	if err := mainWithExitCode(cfg); err != nil {
+	    os.Exit(1)
+	}
 }
