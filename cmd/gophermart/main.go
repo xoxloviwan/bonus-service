@@ -62,7 +62,11 @@ func mainWithError(cfg conf.Config) error {
 }
 
 func main() {
-	cfg := conf.InitConfig()
+	cfg, err := conf.InitConfig()
+	if err != nil {
+		api.Log.Error(err.Error())
+		os.Exit(1)
+	}
 	if err := mainWithError(cfg); err != nil {
 		api.Log.Error(fmt.Sprintf("service stopped with error: %s\n", err))
 		os.Exit(1)
