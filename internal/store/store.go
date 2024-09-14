@@ -29,6 +29,11 @@ func (db Store) CreateUsersTable(ctx context.Context) error {
 			login text NOT NULL UNIQUE,
 			password text NOT NULL,
 			sum double precision)`)
+	if err != nil {
+		return err
+	}
+	_, err = db.Exec(ctx,
+		`CREATE INDEX IF NOT EXISTS users_login_idx ON users (login)`)
 	return err
 }
 
