@@ -10,7 +10,7 @@ type Store struct {
 	*pgxpool.Pool
 }
 
-func NewStore(ctx context.Context, connString string) (Store, error) {
+func NewStore(ctx context.Context, connString string) (*Store, error) {
 	dbpool, err := pgxpool.New(ctx, connString)
 	if err != nil {
 		return Store{}, err
