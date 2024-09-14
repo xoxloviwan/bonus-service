@@ -27,7 +27,7 @@ func (db *Store) CreateUsersTable(ctx context.Context) error {
 	return err
 }
 
-func (db Store) AddUser(login string, hash []byte) (int, error) {
+func (db *Store) AddUser(login string, hash []byte) (int, error) {
 	row := db.QueryRow(context.Background(), "INSERT INTO users (login, password) VALUES ($1, $2) RETURNING id", login, hash)
 	var userID int
 	err := row.Scan(&userID)
@@ -37,7 +37,7 @@ func (db Store) AddUser(login string, hash []byte) (int, error) {
 	return userID, nil
 }
 
-func (db Store) GetUser(login string) (hash []byte, userID int, err error) {
+func (db *Store) GetUser(login string) (hash []byte, userID int, err error) {
 	row := db.QueryRow(context.Background(), "SELECT id, password FROM users WHERE login = $1", login)
 	err = row.Scan(&userID, &hash)
 	if err != nil {
