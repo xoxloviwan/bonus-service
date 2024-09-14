@@ -13,9 +13,9 @@ type Store struct {
 func NewStore(ctx context.Context, connString string) (*Store, error) {
 	dbpool, err := pgxpool.New(ctx, connString)
 	if err != nil {
-		return Store{}, err
+		return &Store{}, err
 	}
-	return Store{dbpool}, nil
+	return &Store{dbpool}, nil
 }
 
 func (db Store) CreateUsersTable(ctx context.Context) error {
