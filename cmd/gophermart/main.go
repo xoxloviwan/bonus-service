@@ -40,7 +40,8 @@ func mainWithExitCode(cfg conf.Config) int {
 	go pollster.Run()
 	defer pollster.Stop()
 
-	router := api.Router(st, pollster)
+	handler := api.NewHandler(st, pollster)
+	router := api.Router(handler)
 	server := &http.Server{
 		Addr:    cfg.RunAddress,
 		Handler: router,
