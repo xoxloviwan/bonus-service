@@ -87,8 +87,8 @@ func (h *Handler) NewOrder(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusAccepted)
 }
 
-func NewHandler(store Store) *Handler {
-	return &Handler{store}
+func NewHandler(store Store, poller Poller) *Handler {
+	return &Handler{store, poller}
 }
 
 type BalanceResponse struct {
