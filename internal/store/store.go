@@ -130,7 +130,7 @@ func (db *Store) ListOrders(ctx context.Context, userID int) ([]Order, error) {
 				uploaded_at,
 				accrual
 			FROM orders
-			WHERE user_id = @user_id`,
+			WHERE user_id = @user_id ORDER BY uploaded_at DESC`,
 		pgx.NamedArgs{"user_id": userID})
 	if err != nil {
 		return orders, err

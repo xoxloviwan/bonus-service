@@ -29,6 +29,7 @@ func setupHandler(t *testing.T) *Handler {
 type want struct {
 	contentType string
 	statusCode  int
+	body        string
 }
 
 type authTescases []struct {
