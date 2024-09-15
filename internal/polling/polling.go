@@ -20,9 +20,9 @@ var Downtime atomic.Uint64
 var RPM atomic.Uint64
 
 type accrualResp struct {
-	Order   int    `json:"order,string"`
-	Status  string `json:"status"`
-	Accrual *int   `json:"accrual,omitempty"`
+	Order   int      `json:"order,string"`
+	Status  string   `json:"status"`
+	Accrual *float64 `json:"accrual,omitempty"`
 }
 
 type Store interface {
