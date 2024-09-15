@@ -4,25 +4,15 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
-	"os"
 
 	"github.com/felixge/httpsnoop"
 	"github.com/google/uuid"
 )
 
-var Log *slog.Logger
-var lvl *slog.LevelVar
-
-func init() {
-	lvl = new(slog.LevelVar)
-	lvl.Set(slog.LevelDebug)
-	Log = slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: lvl}))
-}
-
 func loggingMiddleware(h http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		reqID := uuid.New().String()
-		Log.Info(
+		slog.Info(
 			"REQ",
 			slog.String("request_id", reqID),
 			slog.String("method", r.Method),
@@ -33,7 +23,7 @@ func loggingMiddleware(h http.Handler) http.Handler {
 
 		// this runs handler h and captures information about HTTP request
 		m := httpsnoop.CaptureMetrics(h, w, r)
-		Log.Info(
+		slog.Info(
 			"RES",
 			slog.String("request_id", reqID),
 			slog.Int("status", m.Code),

@@ -23,6 +23,7 @@ type Config struct {
 	RunAddress           string `envDefault:""`
 	DatabaseURI          string `envDefault:""`
 	AccrualSystemAddress string `envDefault:""`
+	Level                string `envDefault:""`
 }
 
 func InitConfig() (Config, error) {

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"gophermart/internal/api"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -14,6 +15,31 @@ import (
 	"gophermart/internal/polling"
 	"gophermart/internal/store"
 )
+
+var lvl *slog.LevelVar
+
+func init() {
+	lvl = new(slog.LevelVar)
+	lvl.Set(slog.LevelInfo)
+	Log := slog.New(slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: lvl}))
+	slog.SetDefault(Log)
+}
+
+func setLogLevel(level string) {
+	var lvlVal slog.Level
+	switch level {
+	case "debug":
+		lvlVal = slog.LevelDebug
+	case "info":
+		lvlVal = slog.LevelInfo
+	case "error":
+		lvlVal = slog.LevelError
+	default:
+		lvlVal = slog.LevelError
+	}
+	slog.Info(fmt.Sprintf("log level %s", lvlVal))
+	lvl.Set(lvlVal)
+}
 
 func mainWithError(cfg conf.Config) error {
 	st, err := store.NewStore(context.Background(), cfg.DatabaseURI)
@@ -46,7 +72,7 @@ func mainWithError(cfg conf.Config) error {
 	go func() {
 		errCh <- server.ListenAndServe()
 	}()
-	api.Log.Info(fmt.Sprintf("service listening on %s", cfg.RunAddress))
+	slog.Info(fmt.Sprintf("service listening on %s", cfg.RunAddress))
 
 	sigCh := make(chan os.Signal, 1) // we need to reserve to buffer size 1, so the notifier are not blocked
 	signal.Notify(sigCh, os.Interrupt, syscall.SIGINT)
@@ -54,15 +80,15 @@ func mainWithError(cfg conf.Config) error {
 	for {
 		select {
 		case <-sigCh:
-			api.Log.Info("calling SIGINT")
+			slog.Info("calling SIGINT")
 			ctx, cancelCtx := context.WithTimeout(context.TODO(), 5*time.Second)
 			defer cancelCtx()
 			err := server.Shutdown(ctx)
 			if err != nil {
-				api.Log.Error(fmt.Sprintf("shutdown error: %s", err))
+				slog.Error(fmt.Sprintf("shutdown error: %s", err))
 				return err
 			}
-			api.Log.Info("service gracefully stopped")
+			slog.Info("service gracefully stopped")
 			return nil
 		case err := <-errCh:
 			return err
@@ -73,11 +99,12 @@ func mainWithError(cfg conf.Config) error {
 func main() {
 	cfg, err := conf.InitConfig()
 	if err != nil {
-		api.Log.Error(err.Error())
+		slog.Error(err.Error())
 		os.Exit(1)
 	}
+	setLogLevel(cfg.Level)
 	if err := mainWithError(cfg); err != nil {
-		api.Log.Error(fmt.Sprintf("service stopped with error: %s\n", err))
+		slog.Error(fmt.Sprintf("service stopped with error: %s\n", err))
 		os.Exit(1)
 	}
 }

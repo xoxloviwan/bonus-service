@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gophermart/internal/api"
 	"gophermart/internal/types"
+	"log/slog"
 	"sync"
 	"time"
 )
@@ -45,7 +45,7 @@ func (p *Pollster) Run() {
 		select {
 		case <-ticker.C:
 			taskNumber := len(p.orders)
-			api.Log.Info(fmt.Sprintf("Pollster ticker. Tasks in background: %d", taskNumber))
+			slog.Info(fmt.Sprintf("Pollster ticker. Tasks in background: %d", taskNumber))
 			var wg sync.WaitGroup
 			wg.Add(taskNumber)
 			for _, orderID := range p.orders {
@@ -54,7 +54,7 @@ func (p *Pollster) Run() {
 			wg.Wait()
 			p.orders = make([]int, 0)
 		case <-p.stopCh:
-			api.Log.Info("Pollster stopped")
+			slog.Info("Pollster stopped")
 			return
 		case orderID := <-p.incoming:
 			p.orders = append(p.orders, orderID)
