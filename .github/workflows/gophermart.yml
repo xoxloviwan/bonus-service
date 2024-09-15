@@ -7,7 +7,7 @@ on:
     branches:
       - main
       - master
-      - polling
+      - order
 
 jobs:
 

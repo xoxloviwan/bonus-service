@@ -6,7 +6,7 @@ on:
     branches:
       - master
       - main
-      - polling
+      - order
 
 jobs:
   statictest:

@@ -123,6 +123,28 @@ func (db *Store) UpdateOrderInfo(ctx context.Context, orderID int, status string
 }
 
 func (db *Store) ListOrders(ctx context.Context, userID int) ([]Order, error) {
-	//TODO
-	return []Order{}, nil
+	orders := []Order{}
+	rows, err := db.Query(ctx, `SELECT
+				id,
+				status,
+				uploaded_at,
+				accrual
+			FROM orders
+			WHERE user_id = @user_id`,
+		pgx.NamedArgs{"user_id": userID})
+	if err != nil {
+		return orders, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		order := Order{}
+		err = rows.Scan(&order.ID, &order.Status, &order.UploadedAt, &order.Accrual)
+		if err != nil {
+			return orders, err
+		}
+		orders = append(orders, order)
+	}
+
+	return orders, nil
 }
