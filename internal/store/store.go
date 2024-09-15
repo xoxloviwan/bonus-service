@@ -71,7 +71,7 @@ func (db *Store) CreateOrdersTable(ctx context.Context) error {
 	return err
 }
 
-func (db *Store) AddOrder(ctx context.Context, orderID int, userID int) error {
+func (db *Store) AddOrder(ctx context.Context, orderID int, userID int) (string, error) {
 	t := time.Now()
 	ct, err := db.Exec(ctx,
 		`INSERT INTO orders (
@@ -92,7 +92,7 @@ func (db *Store) AddOrder(ctx context.Context, orderID int, userID int) error {
 			"status":      "NEW",
 		})
 	if err != nil {
-		return err
+		return "", err
 	}
 	if ct.RowsAffected() == 0 {
 		row := db.QueryRow(ctx, "SELECT status, user_id, uploaded_at FROM orders WHERE id = @id", pgx.NamedArgs{"id": orderID})
@@ -101,14 +101,14 @@ func (db *Store) AddOrder(ctx context.Context, orderID int, userID int) error {
 		var userIDFromOrder int
 		err = row.Scan(&status, &userIDFromOrder, &uploadedAt)
 		if err != nil {
-			return err
+			return "", err
 		}
 		if userID == userIDFromOrder {
-			return model.ErrOldOrder
+			return status, model.ErrOldOrder
 		}
-		return model.ErrOrderExists
+		return "", model.ErrOrderExists
 	}
-	return nil
+	return "NEW", nil
 }
 
 func (db *Store) UpdateOrderInfo(ctx context.Context, orderID int, status string, accrual *float64) error {

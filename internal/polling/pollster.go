@@ -7,6 +7,7 @@ import (
 	"gophermart/internal/model"
 	"log/slog"
 	"sync"
+	"syscall"
 	"time"
 )
 
@@ -72,7 +73,10 @@ func (p *Pollster) poll(orderID int, wg *sync.WaitGroup) {
 	defer wg.Done()
 	err := polling(context.TODO(), p.store, p.accrualAddr, orderID)
 	if err != nil {
-		if errors.Is(err, model.ErrOrderNotFound) || errors.Is(err, model.ErrOrderInProcess) {
+		if errors.Is(err, model.ErrOrderNotFound) ||
+			errors.Is(err, model.ErrOrderInProcess) ||
+			errors.Is(err, syscall.ECONNREFUSED) ||
+			errors.Is(err, syscall.Errno(10061)) { // golang.org/x/sys/windows WSAECONNREFUSED
 			p.Push(orderID)
 		} else {
 			slog.Error(fmt.Errorf("polling error: %w", err).Error())

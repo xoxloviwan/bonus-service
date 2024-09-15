@@ -36,11 +36,12 @@ func (m *MockStore) EXPECT() *MockStoreMockRecorder {
 }
 
 // AddOrder mocks base method.
-func (m *MockStore) AddOrder(arg0 context.Context, arg1, arg2 int) error {
+func (m *MockStore) AddOrder(arg0 context.Context, arg1, arg2 int) (string, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddOrder", arg0, arg1, arg2)
-	ret0, _ := ret[0].(error)
-	return ret0
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
 }
 
 // AddOrder indicates an expected call of AddOrder.

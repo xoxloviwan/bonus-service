@@ -20,7 +20,7 @@ type Order = model.Order
 type Store interface {
 	AddUser(ctx context.Context, u User) (int, error)
 	GetUser(ctx context.Context, login string) (User, error)
-	AddOrder(ctx context.Context, orderID int, userID int) error
+	AddOrder(ctx context.Context, orderID int, userID int) (string, error)
 	ListOrders(ctx context.Context, userID int) ([]Order, error)
 }
 
@@ -75,9 +75,13 @@ func (h *Handler) NewOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := r.Context().Value(userIDCtxKey{}).(int)
-	err = h.store.AddOrder(r.Context(), orderID, userID)
+	var status string
+	status, err = h.store.AddOrder(r.Context(), orderID, userID)
 	if err != nil {
 		if errors.Is(err, model.ErrOldOrder) {
+			if status != "PROCESSED" && status != "INVALID" {
+				h.poller.Push(orderID)
+			}
 			w.WriteHeader(http.StatusOK)
 			return
 		}

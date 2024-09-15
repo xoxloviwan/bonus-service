@@ -13,12 +13,13 @@ import (
 )
 
 type orderCase struct {
-	name    string
-	method  string
-	url     string
-	reqBody string
-	mockErr error
-	want    want
+	name            string
+	method          string
+	url             string
+	reqBody         string
+	mockOrderStatus string
+	mockErr         error
+	want            want
 }
 
 func TestHandler_NewOrder(t *testing.T) {
@@ -43,7 +44,7 @@ func TestHandler_NewOrder(t *testing.T) {
 			mockErr: model.ErrOldOrder,
 		},
 		{
-			name:    "new_order_status_code_400",
+			name:    "new_order_with_invalid_empty_body_should_repond_status_code_400",
 			method:  http.MethodPost,
 			reqBody: "",
 			url:     "/api/user/orders",
@@ -103,7 +104,7 @@ func TestHandler_NewOrder(t *testing.T) {
 				orderID = -1
 			}
 
-			m.EXPECT().AddOrder(ctx, orderID, userID).Return(tt.mockErr).Times(1)
+			m.EXPECT().AddOrder(ctx, orderID, userID).Return(tt.mockOrderStatus, tt.mockErr).Times(1)
 
 			h.poller.(*MockPoller).EXPECT().Push(orderID).Times(1)
 
