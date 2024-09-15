@@ -111,7 +111,7 @@ func (db *Store) AddOrder(ctx context.Context, orderID int, userID int) error {
 	return nil
 }
 
-func (db *Store) UpdateOrderInfo(ctx context.Context, orderID int, status string, accrual *int) error {
+func (db *Store) UpdateOrderInfo(ctx context.Context, orderID int, status string, accrual *float64) error {
 	_, err := db.Exec(ctx, "UPDATE orders SET status = @status, processed_at = @processed_at, accrual = @accrual WHERE id = @id",
 		pgx.NamedArgs{
 			"id":           orderID,

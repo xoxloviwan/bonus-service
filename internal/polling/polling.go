@@ -26,7 +26,7 @@ type accrualResp struct {
 }
 
 type Store interface {
-	UpdateOrderInfo(ctx context.Context, orderID int, status string, accrual *int) error
+	UpdateOrderInfo(ctx context.Context, orderID int, status string, accrual *float64) error
 }
 
 func polling(ctx context.Context, store Store, accrualAddr string, orderID int) error {

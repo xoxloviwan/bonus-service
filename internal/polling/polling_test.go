@@ -24,7 +24,7 @@ func setupMock(t *testing.T) *MockStore {
 func TestPolling(t *testing.T) {
 	m := setupMock(t)
 
-	accrual := 500
+	accrual := 500.0
 
 	tests := []struct {
 		name         string

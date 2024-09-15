@@ -35,7 +35,7 @@ func (m *MockStore) EXPECT() *MockStoreMockRecorder {
 }
 
 // UpdateOrderInfo mocks base method.
-func (m *MockStore) UpdateOrderInfo(arg0 context.Context, arg1 int, arg2 string, arg3 *int) error {
+func (m *MockStore) UpdateOrderInfo(arg0 context.Context, arg1 int, arg2 string, arg3 *float64) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "UpdateOrderInfo", arg0, arg1, arg2, arg3)
 	ret0, _ := ret[0].(error)
