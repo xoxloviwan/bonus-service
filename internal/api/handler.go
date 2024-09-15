@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 
 	"gophermart/internal/model"
@@ -94,6 +95,7 @@ func (h *Handler) NewOrder(w http.ResponseWriter, r *http.Request) {
 func (h *Handler) OrderList(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(userIDCtxKey{}).(int)
 	orders, err := h.store.ListOrders(r.Context(), userID)
+	slog.Debug(fmt.Sprintf("User %d orders: %+v", userID, orders))
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
