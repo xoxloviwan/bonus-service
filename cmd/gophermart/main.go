@@ -35,7 +35,7 @@ func setLogLevel(level string) {
 	case "error":
 		lvlVal = slog.LevelError
 	default:
-		lvlVal = slog.LevelError
+		lvlVal = slog.LevelDebug
 	}
 	slog.Info(fmt.Sprintf("log level %s", lvlVal))
 	lvl.Set(lvlVal)
