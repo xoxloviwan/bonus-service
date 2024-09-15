@@ -17,9 +17,10 @@ type User = model.User
 type Order = model.Order
 
 type Store interface {
-	AddUser(ctx context.Context, u User) (User, error)
+	AddUser(ctx context.Context, u User) (int, error)
 	GetUser(ctx context.Context, login string) (User, error)
 	AddOrder(ctx context.Context, orderID int, userID int) error
+	ListOrders(ctx context.Context, userID int) ([]Order, error)
 }
 
 type Poller interface {
@@ -88,6 +89,26 @@ func (h *Handler) NewOrder(w http.ResponseWriter, r *http.Request) {
 	}
 	h.poller.Push(orderID)
 	w.WriteHeader(http.StatusAccepted)
+}
+
+func (h *Handler) OrderList(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(userIDCtxKey{}).(int)
+	orders, err := h.store.ListOrders(r.Context(), userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(orders) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	resp, err := json.Marshal(orders)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(resp)
 }
 
 func NewHandler(store Store, poller Poller) *Handler {

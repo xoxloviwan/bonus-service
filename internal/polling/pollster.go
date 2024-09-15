@@ -45,7 +45,7 @@ func (p *Pollster) Run() {
 		select {
 		case <-ticker.C:
 			taskNumber := len(p.orders)
-			slog.Info(fmt.Sprintf("Pollster ticker. Tasks in background: %d", taskNumber))
+			slog.Debug(fmt.Sprintf("Pollster ticker. Tasks in background: %d", taskNumber))
 			var wg sync.WaitGroup
 			wg.Add(taskNumber)
 			for _, orderID := range p.orders {

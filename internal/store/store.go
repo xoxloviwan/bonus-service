@@ -40,13 +40,13 @@ func (db *Store) CreateUsersTable(ctx context.Context) error {
 	return err
 }
 
-func (db *Store) AddUser(ctx context.Context, u User) (User, error) {
+func (db *Store) AddUser(ctx context.Context, u User) (int, error) {
 	row := db.QueryRow(ctx, "INSERT INTO users (login, password) VALUES ($1, $2) RETURNING id", u.Login, u.Hash)
 	err := row.Scan(&u.ID)
 	if err != nil {
-		return User{}, err
+		return 0, err
 	}
-	return u, nil
+	return u.ID, nil
 }
 
 func (db *Store) GetUser(ctx context.Context, login string) (u User, err error) {
@@ -120,4 +120,9 @@ func (db *Store) UpdateOrderInfo(ctx context.Context, orderID int, status string
 			"accrual":      *accrual,
 		})
 	return err
+}
+
+func (db *Store) ListOrders(ctx context.Context, userID int) ([]Order, error) {
+	//TODO
+	return []Order{}, nil
 }

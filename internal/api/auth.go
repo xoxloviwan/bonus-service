@@ -85,19 +85,22 @@ func newUser(ctx context.Context, store Store, creds Creds) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	return store.AddUser(ctx, creds.User, hash)
+	return store.AddUser(ctx, User{
+		Login: creds.User,
+		Hash:  hash,
+	})
 }
 
 func authUser(ctx context.Context, store Store, creds Creds) (int, error) {
-	hash, userID, err := store.GetUser(ctx, creds.User)
+	u, err := store.GetUser(ctx, creds.User)
 	if err != nil {
 		return 0, errors.New("auth failed")
 	}
-	err = bcrypt.CompareHashAndPassword(hash, []byte(creds.Pwd))
+	err = bcrypt.CompareHashAndPassword(u.Hash, []byte(creds.Pwd))
 	if err != nil {
 		return 0, errors.New("auth failed")
 	}
-	return userID, nil
+	return u.ID, nil
 }
 
 // Claims — структура утверждений, которая включает стандартные утверждения и
