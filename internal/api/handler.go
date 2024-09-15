@@ -8,14 +8,17 @@ import (
 	"io"
 	"net/http"
 
-	"gophermart/internal/types"
+	"gophermart/internal/model"
 
 	"github.com/theplant/luhn"
 )
 
+type User = model.User
+type Order = model.Order
+
 type Store interface {
-	AddUser(ctx context.Context, login string, hash []byte) (int, error)
-	GetUser(ctx context.Context, login string) ([]byte, int, error)
+	AddUser(ctx context.Context, u User) (User, error)
+	GetUser(ctx context.Context, login string) (User, error)
 	AddOrder(ctx context.Context, orderID int, userID int) error
 }
 
@@ -72,11 +75,11 @@ func (h *Handler) NewOrder(w http.ResponseWriter, r *http.Request) {
 	userID := r.Context().Value(userIDCtxKey{}).(int)
 	err = h.store.AddOrder(r.Context(), orderID, userID)
 	if err != nil {
-		if errors.Is(err, types.ErrOldOrder) {
+		if errors.Is(err, model.ErrOldOrder) {
 			w.WriteHeader(http.StatusOK)
 			return
 		}
-		if errors.Is(err, types.ErrOrderExists) {
+		if errors.Is(err, model.ErrOrderExists) {
 			w.WriteHeader(http.StatusConflict)
 			return
 		}

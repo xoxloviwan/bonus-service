@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"gophermart/internal/types"
+	"gophermart/internal/model"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgxpool"
@@ -13,6 +13,9 @@ import (
 type Store struct {
 	*pgxpool.Pool
 }
+
+type User = model.User
+type Order = model.Order
 
 func NewStore(ctx context.Context, connString string) (*Store, error) {
 	dbpool, err := pgxpool.New(ctx, connString)
@@ -101,9 +104,9 @@ func (db *Store) AddOrder(ctx context.Context, orderID int, userID int) error {
 			return err
 		}
 		if userID == userIDFromOrder {
-			return types.ErrOldOrder
+			return model.ErrOldOrder
 		}
-		return types.ErrOrderExists
+		return model.ErrOrderExists
 	}
 	return nil
 }

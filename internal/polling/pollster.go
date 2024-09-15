@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"gophermart/internal/types"
+	"gophermart/internal/model"
 	"log/slog"
 	"sync"
 	"time"
@@ -72,7 +72,7 @@ func (p *Pollster) poll(orderID int, wg *sync.WaitGroup) {
 	defer wg.Done()
 	err := polling(context.TODO(), p.store, p.accrualAddr, orderID)
 	if err != nil {
-		if errors.Is(err, types.ErrOrderNotFound) || errors.Is(err, types.ErrOrderInProcess) {
+		if errors.Is(err, model.ErrOrderNotFound) || errors.Is(err, model.ErrOrderInProcess) {
 			p.Push(orderID)
 		}
 	}

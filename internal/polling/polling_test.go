@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"testing"
 
-	"gophermart/internal/types"
+	"gophermart/internal/model"
 
 	"github.com/golang/mock/gomock"
 )
@@ -48,7 +48,7 @@ func TestPolling(t *testing.T) {
 				Status: "NEW",
 			},
 			acStatusCode: http.StatusNoContent,
-			wantErr:      types.ErrOrderNotFound,
+			wantErr:      model.ErrOrderNotFound,
 		},
 		{
 			name: "polling_accrual_status_code_429",
@@ -57,7 +57,7 @@ func TestPolling(t *testing.T) {
 				Status: "NEW",
 			},
 			acStatusCode: http.StatusTooManyRequests,
-			wantErr:      types.ErrManyRequests,
+			wantErr:      model.ErrManyRequests,
 		},
 		{
 			name: "polling_accrual_status_code_200_REGISTERED",
@@ -66,7 +66,7 @@ func TestPolling(t *testing.T) {
 				Status: "REGISTERED",
 			},
 			acStatusCode: http.StatusOK,
-			wantErr:      types.ErrOrderInProcess,
+			wantErr:      model.ErrOrderInProcess,
 		},
 		{
 			name: "polling_accrual_status_code_200_PROCESSING",
@@ -75,7 +75,7 @@ func TestPolling(t *testing.T) {
 				Status: "PROCESSING",
 			},
 			acStatusCode: http.StatusOK,
-			wantErr:      types.ErrOrderInProcess,
+			wantErr:      model.ErrOrderInProcess,
 		},
 		{
 			name: "polling_accrual_status_code_200_INVALID",

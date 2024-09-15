@@ -5,7 +5,7 @@ import (
 	"context"
 	"errors"
 	"gophermart/internal/mock"
-	"gophermart/internal/types"
+	"gophermart/internal/model"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -40,7 +40,7 @@ func TestHandler_NewOrder(t *testing.T) {
 			want: want{
 				statusCode: http.StatusOK,
 			},
-			mockErr: types.ErrOldOrder,
+			mockErr: model.ErrOldOrder,
 		},
 		{
 			name:    "new_order_status_code_400",
@@ -68,7 +68,7 @@ func TestHandler_NewOrder(t *testing.T) {
 			want: want{
 				statusCode: http.StatusConflict,
 			},
-			mockErr: types.ErrOrderExists,
+			mockErr: model.ErrOrderExists,
 		},
 		{
 			name:    "new_order_status_code_500",

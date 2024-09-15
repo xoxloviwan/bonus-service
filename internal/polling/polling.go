@@ -10,7 +10,7 @@ import (
 
 	"sync/atomic"
 
-	"gophermart/internal/types"
+	"gophermart/internal/model"
 
 	"github.com/go-resty/resty/v2"
 )
@@ -43,7 +43,7 @@ func polling(ctx context.Context, store Store, accrualAddr string, orderID int) 
 	}
 
 	if resp.StatusCode() == http.StatusNoContent {
-		return types.ErrOrderNotFound
+		return model.ErrOrderNotFound
 	}
 
 	if resp.StatusCode() == http.StatusTooManyRequests {
@@ -61,7 +61,7 @@ func polling(ctx context.Context, store Store, accrualAddr string, orderID int) 
 			}
 			RPM.Store(uint64(rpm))
 		}
-		return types.ErrManyRequests
+		return model.ErrManyRequests
 	}
 
 	if resp.StatusCode() != http.StatusOK {
@@ -76,7 +76,7 @@ func polling(ctx context.Context, store Store, accrualAddr string, orderID int) 
 		return err
 	}
 	if orderInfo.Status == "REGISTERED" || orderInfo.Status == "PROCESSING" {
-		return types.ErrOrderInProcess
+		return model.ErrOrderInProcess
 	}
 	return nil
 }
