@@ -56,6 +56,7 @@ func mainWithError(cfg conf.Config) error {
 	if err != nil {
 		return err
 	}
+	slog.Info("accrual system info", slog.String("accrual_url", cfg.AccrualSystemAddress))
 	pollster := polling.NewPollster(cfg.AccrualSystemAddress, st)
 
 	go pollster.Run()

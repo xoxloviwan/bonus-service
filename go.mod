@@ -7,7 +7,7 @@ require (
 	github.com/caarlos0/env/v11 v11.2.2
 	github.com/felixge/httpsnoop v1.0.4
 	github.com/go-pkgz/routegroup v1.1.1
-	github.com/go-resty/resty/v2 v2.14.0
+	github.com/go-resty/resty/v2 v2.15.0
 	github.com/golang-jwt/jwt/v4 v4.5.0
 	github.com/golang/mock v1.6.0
 	github.com/google/uuid v1.6.0

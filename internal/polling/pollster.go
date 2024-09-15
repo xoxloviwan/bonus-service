@@ -74,6 +74,8 @@ func (p *Pollster) poll(orderID int, wg *sync.WaitGroup) {
 	if err != nil {
 		if errors.Is(err, model.ErrOrderNotFound) || errors.Is(err, model.ErrOrderInProcess) {
 			p.Push(orderID)
+		} else {
+			slog.Error(fmt.Errorf("polling error: %w", err).Error())
 		}
 	}
 }

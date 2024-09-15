@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -34,6 +35,9 @@ func polling(ctx context.Context, store Store, accrualAddr string, orderID int) 
 	orderInfo := accrualResp{}
 
 	client := resty.New()
+
+	slog.Debug("Polling", slog.String("url", url))
+
 	resp, err := client.R().
 		SetContext(ctx).
 		SetHeader("Accept", "application/json").
