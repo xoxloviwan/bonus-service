@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/felixge/httpsnoop"
 	"github.com/google/uuid"
