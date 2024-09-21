@@ -66,10 +66,10 @@ func (mr *MockStoreMockRecorder) AddUser(arg0, arg1 interface{}) *gomock.Call {
 }
 
 // GetUser mocks base method.
-func (m *MockStore) GetUser(arg0 context.Context, arg1 string) (model.User, error) {
+func (m *MockStore) GetUser(arg0 context.Context, arg1 string) (*model.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUser", arg0, arg1)
-	ret0, _ := ret[0].(model.User)
+	ret0, _ := ret[0].(*model.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

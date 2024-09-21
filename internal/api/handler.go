@@ -22,7 +22,7 @@ type OrderStatus = model.OrderStatus
 //go:generate mockgen -destination ../mock/store_mock.go -package mock gophermart/internal/api Store
 type Store interface {
 	AddUser(ctx context.Context, u User) (int, error)
-	GetUser(ctx context.Context, login string) (User, error)
+	GetUser(ctx context.Context, login string) (*User, error)
 	AddOrder(ctx context.Context, orderID int, userID int) (OrderStatus, error)
 	ListOrders(ctx context.Context, userID int) ([]Order, error)
 }

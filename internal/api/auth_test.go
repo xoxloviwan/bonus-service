@@ -185,7 +185,7 @@ func TestHandler_Login(t *testing.T) {
 
 			m := h.store.(*mock.MockStore)
 
-			m.EXPECT().GetUser(context.Background(), gomock.Any()).Return(tt.mockUser, tt.mockErr).Times(1)
+			m.EXPECT().GetUser(context.Background(), gomock.Any()).Return(&tt.mockUser, tt.mockErr).Times(1)
 
 			h.Login(w, req)
 
