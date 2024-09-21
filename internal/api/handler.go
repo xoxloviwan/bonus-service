@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"gophermart/internal/helpers"
 	"gophermart/internal/model"
 
 	"github.com/theplant/luhn"
@@ -33,29 +34,8 @@ type Handler struct {
 	poller Poller
 }
 
-// borrowed from benchfmt/internal/bytesconv/atoi.go
-// atoi is equivalent to ParseInt(s, 10, 0), converted to type int.
-func atoi(s []byte) (int, error) {
-	const intSize = 32 << (^uint(0) >> 63)
-
-	sLen := len(s)
-	if intSize == 32 && (0 < sLen && sLen < 10) ||
-		intSize == 64 && (0 < sLen && sLen < 19) {
-		// Fast path for small integers that fit int type.
-		s0 := s
-
-		n := 0
-		for _, ch := range s {
-			ch -= '0'
-			if ch > 9 {
-				return 0, fmt.Errorf("atoi: invalid bytes: %q", string(s0))
-			}
-			n = n*10 + int(ch)
-		}
-
-		return n, nil
-	}
-	return 0, errors.New("atoi: not realized")
+func NewHandler(store Store, poller Poller) *Handler {
+	return &Handler{store, poller}
 }
 
 func (h *Handler) NewOrder(w http.ResponseWriter, r *http.Request) {
@@ -64,7 +44,7 @@ func (h *Handler) NewOrder(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	orderID, err := atoi(data)
+	orderID, err := helpers.Atoi(data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -115,10 +95,6 @@ func (h *Handler) OrderList(w http.ResponseWriter, r *http.Request) {
 	}
 	w.Header().Set("Content-Type", "application/json")
 	w.Write(resp)
-}
-
-func NewHandler(store Store, poller Poller) *Handler {
-	return &Handler{store, poller}
 }
 
 type BalanceResponse struct {
