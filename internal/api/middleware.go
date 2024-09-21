@@ -42,7 +42,7 @@ func authMiddleware(h http.Handler) http.Handler {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		auth = auth[7:] // cut 'Bearer ' prefix
+		auth = strings.Replace(auth, "Bearer ", "", 1)
 		userID, err := getUserID(auth)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
