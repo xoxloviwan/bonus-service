@@ -25,6 +25,7 @@ type accrualResp struct {
 	Accrual *float64 `json:"accrual,omitempty"`
 }
 
+//go:generate mockgen -destination ./internal/polling/store_mock.go -package polling gophermart/internal/polling Store
 type Store interface {
 	UpdateOrderInfo(ctx context.Context, orderID int, status string, accrual *float64) error
 }
