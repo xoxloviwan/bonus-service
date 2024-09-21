@@ -90,7 +90,7 @@ func TestPolling(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			m.EXPECT().UpdateOrderInfo(context.Background(), tt.ac.Order, tt.ac.Status.String(), gomock.Any()).Return(tt.wantErr).Times(1)
+			m.EXPECT().UpdateOrderInfo(context.Background(), tt.ac).Return(tt.wantErr).Times(1)
 
 			// Start a local HTTP server
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
