@@ -63,7 +63,7 @@ func (db *Store) AddUser(ctx context.Context, u User) (int, error) {
 func (db *Store) GetUser(ctx context.Context, login string) (*User, error) {
 	u := &User{Login: login}
 	row := db.QueryRow(ctx, "SELECT id, password FROM users WHERE login = $1", u.Login)
-	err := row.Scan(u.ID, u.Hash)
+	err := row.Scan(&u.ID, &u.Hash)
 	if err != nil {
 		return u, err
 	}
