@@ -48,14 +48,6 @@ func mainWithError(cfg conf.Config) error {
 		return err
 	}
 	defer st.Close()
-	err = st.CreateUsersTable(context.Background())
-	if err != nil {
-		return err
-	}
-	err = st.CreateOrdersTable(context.Background())
-	if err != nil {
-		return err
-	}
 	slog.Info("accrual system info", slog.String("accrual_url", cfg.AccrualSystemAddress))
 	pollster := polling.NewPollster(cfg.AccrualSystemAddress, st)
 

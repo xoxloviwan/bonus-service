@@ -23,7 +23,17 @@ func NewStore(ctx context.Context, connString string) (*Store, error) {
 	if err != nil {
 		return &Store{}, err
 	}
-	return &Store{dbpool}, nil
+	st := Store{dbpool}
+	err = st.CreateUsersTable(ctx)
+	if err != nil {
+		return &Store{}, err
+	}
+	err = st.CreateOrdersTable(ctx)
+	if err != nil {
+		return &Store{}, err
+	}
+
+	return &st, nil
 }
 
 func (db *Store) CreateUsersTable(ctx context.Context) error {
