@@ -60,7 +60,7 @@ func (db *Store) AddUser(ctx context.Context, u User) (int, error) {
 	return u.ID, nil
 }
 
-func (db *Store) GetUser(ctx context.Context, login string) (u User, err error) {
+func (db *Store) GetUser(ctx context.Context, login string) (u *User, err error) {
 	row := db.QueryRow(ctx, "SELECT id, password FROM users WHERE login = $1", login)
 	err = row.Scan(&u.ID, &u.Hash)
 	if err != nil {
