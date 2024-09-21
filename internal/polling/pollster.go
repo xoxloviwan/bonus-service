@@ -75,7 +75,7 @@ func (p *Pollster) poll(orderID int, wg *sync.WaitGroup) {
 			errors.Is(err, model.ErrOrderInProcess) ||
 			errors.Is(err, syscall.ECONNREFUSED) ||
 			errors.Is(err, syscall.Errno(10061)) { // golang.org/x/sys/windows WSAECONNREFUSED
-			p.Push(orderID)
+			go p.Push(orderID)
 		} else {
 			slog.Error(fmt.Errorf("polling error: %w", err).Error())
 		}
