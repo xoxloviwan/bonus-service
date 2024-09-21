@@ -16,6 +16,7 @@ type Store struct {
 
 type User = model.User
 type Order = model.Order
+type OrderStatus = model.OrderStatus
 
 func NewStore(ctx context.Context, connString string) (*Store, error) {
 	dbpool, err := pgxpool.New(ctx, connString)
@@ -63,7 +64,7 @@ func (db *Store) CreateOrdersTable(ctx context.Context) error {
 	_, err := db.Exec(ctx,
 		`CREATE TABLE IF NOT EXISTS orders (
 			id bigint NOT NULL PRIMARY KEY,
-			status text NOT NULL,
+			status integer NOT NULL,
 			user_id bigint NOT NULL,
 			uploaded_at timestamp with time zone NOT NULL,
 			processed_at timestamp with time zone,
@@ -71,7 +72,7 @@ func (db *Store) CreateOrdersTable(ctx context.Context) error {
 	return err
 }
 
-func (db *Store) AddOrder(ctx context.Context, orderID int, userID int) (string, error) {
+func (db *Store) AddOrder(ctx context.Context, orderID int, userID int) (model.OrderStatus, error) {
 	t := time.Now()
 	ct, err := db.Exec(ctx,
 		`INSERT INTO orders (
@@ -89,35 +90,35 @@ func (db *Store) AddOrder(ctx context.Context, orderID int, userID int) (string,
 			"id":          orderID,
 			"user_id":     userID,
 			"uploaded_at": t,
-			"status":      "NEW",
+			"status":      model.OrderStatusNew,
 		})
 	if err != nil {
-		return "", err
+		return -1, err
 	}
 	if ct.RowsAffected() == 0 {
 		row := db.QueryRow(ctx, "SELECT status, user_id, uploaded_at FROM orders WHERE id = @id", pgx.NamedArgs{"id": orderID})
 		var uploadedAt time.Time
-		var status string
+		var status OrderStatus
 		var userIDFromOrder int
 		err = row.Scan(&status, &userIDFromOrder, &uploadedAt)
 		if err != nil {
-			return "", err
+			return -1, err
 		}
 		if userID == userIDFromOrder {
 			return status, model.ErrOldOrder
 		}
-		return "", model.ErrOrderExists
+		return -1, model.ErrOrderExists
 	}
-	return "NEW", nil
+	return model.OrderStatusNew, nil
 }
 
-func (db *Store) UpdateOrderInfo(ctx context.Context, orderID int, status string, accrual *float64) error {
+func (db *Store) UpdateOrderInfo(ctx context.Context, info model.AccrualResp) error {
 	_, err := db.Exec(ctx, "UPDATE orders SET status = @status, processed_at = @processed_at, accrual = @accrual WHERE id = @id",
 		pgx.NamedArgs{
-			"id":           orderID,
-			"status":       status,
+			"id":           info.Order,
+			"status":       info.Status,
 			"processed_at": time.Now(),
-			"accrual":      *accrual,
+			"accrual":      info.Accrual,
 		})
 	return err
 }

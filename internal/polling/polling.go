@@ -21,7 +21,7 @@ var RPM atomic.Uint64
 
 //go:generate mockgen -destination ./store_mock.go -package polling gophermart/internal/polling Store
 type Store interface {
-	UpdateOrderInfo(ctx context.Context, orderID int, status string, accrual *float64) error
+	UpdateOrderInfo(ctx context.Context, orderInfo model.AccrualResp) error
 }
 
 func polling(ctx context.Context, store Store, accrualAddr string, orderID int) error {
@@ -71,7 +71,7 @@ func polling(ctx context.Context, store Store, accrualAddr string, orderID int) 
 		return err
 	}
 
-	if err := store.UpdateOrderInfo(ctx, orderID, orderInfo.Status.String(), orderInfo.Accrual); err != nil {
+	if err := store.UpdateOrderInfo(ctx, orderInfo); err != nil {
 		return err
 	}
 	if orderInfo.Status == model.OrderStatusRegistered || orderInfo.Status == model.OrderStatusProcessing {

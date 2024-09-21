@@ -17,12 +17,13 @@ import (
 
 type User = model.User
 type Order = model.Order
+type OrderStatus = model.OrderStatus
 
 //go:generate mockgen -destination ../mock/store_mock.go -package mock gophermart/internal/api Store
 type Store interface {
 	AddUser(ctx context.Context, u User) (int, error)
 	GetUser(ctx context.Context, login string) (User, error)
-	AddOrder(ctx context.Context, orderID int, userID int) (string, error)
+	AddOrder(ctx context.Context, orderID int, userID int) (OrderStatus, error)
 	ListOrders(ctx context.Context, userID int) ([]Order, error)
 }
 
@@ -57,11 +58,11 @@ func (h *Handler) NewOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := r.Context().Value(userIDCtxKey{}).(int)
-	var status string
+	var status OrderStatus
 	status, err = h.store.AddOrder(r.Context(), orderID, userID)
 	if err != nil {
 		if errors.Is(err, model.ErrOldOrder) {
-			if status != "PROCESSED" && status != "INVALID" {
+			if status != model.OrderStatusProcessed && status != model.OrderStatusInvalid {
 				h.poller.Push(orderID)
 			}
 			w.WriteHeader(http.StatusOK)

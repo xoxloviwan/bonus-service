@@ -36,10 +36,10 @@ func (m *MockStore) EXPECT() *MockStoreMockRecorder {
 }
 
 // AddOrder mocks base method.
-func (m *MockStore) AddOrder(arg0 context.Context, arg1, arg2 int) (string, error) {
+func (m *MockStore) AddOrder(arg0 context.Context, arg1, arg2 int) (model.OrderStatus, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddOrder", arg0, arg1, arg2)
-	ret0, _ := ret[0].(string)
+	ret0, _ := ret[0].(model.OrderStatus)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }

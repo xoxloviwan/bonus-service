@@ -95,7 +95,7 @@ func TestHandler_NewOrder(t *testing.T) {
 				orderID = -1
 			}
 
-			m.EXPECT().AddOrder(ctx, orderID, userID).Return("NEW", tt.mockErr).Times(1)
+			m.EXPECT().AddOrder(ctx, orderID, userID).Return(model.OrderStatusNew, tt.mockErr).Times(1)
 
 			h.poller.(*MockPoller).EXPECT().Push(orderID).Times(1)
 
