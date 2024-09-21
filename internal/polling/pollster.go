@@ -35,9 +35,7 @@ func NewPollster(accrualAddr string, store Store) *Pollster {
 }
 
 func (p *Pollster) Push(OrderID int) {
-	go func() {
-		p.incoming <- OrderID
-	}()
+	p.incoming <- OrderID
 }
 
 func (p *Pollster) Run() {
