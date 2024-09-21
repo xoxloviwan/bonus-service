@@ -18,6 +18,7 @@ import (
 type User = model.User
 type Order = model.Order
 
+//go:generate mockgen -destination ../mock/store_mock.go -package mock gophermart/internal/api Store
 type Store interface {
 	AddUser(ctx context.Context, u User) (int, error)
 	GetUser(ctx context.Context, login string) (User, error)
@@ -25,6 +26,7 @@ type Store interface {
 	ListOrders(ctx context.Context, userID int) ([]Order, error)
 }
 
+//go:generate mockgen -destination ./poller_mock.go -package api gophermart/internal/api Poller
 type Poller interface {
 	Push(orderID int)
 }

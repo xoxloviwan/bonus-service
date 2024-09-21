@@ -25,63 +25,64 @@ func TestPolling(t *testing.T) {
 	m := setupMock(t)
 
 	accrual := 500.0
+	orderID := 7992723465
 
 	tests := []struct {
 		name         string
-		ac           accrualResp
+		ac           model.AccrualResp
 		acStatusCode int
 		wantErr      error
 	}{
 		{
 			name: "polling_accrual_status_code_200_PROCESSED",
-			ac: accrualResp{
-				Order:   7992723465,
-				Status:  "PROCESSED",
+			ac: model.AccrualResp{
+				Order:   orderID,
+				Status:  model.OrderStatusProcessed,
 				Accrual: &accrual,
 			},
 			acStatusCode: http.StatusOK,
 		},
 		{
 			name: "polling_accrual_status_code_204",
-			ac: accrualResp{
-				Order:  7992723465,
-				Status: "NEW",
+			ac: model.AccrualResp{
+				Order:  orderID,
+				Status: model.OrderStatusNew,
 			},
 			acStatusCode: http.StatusNoContent,
 			wantErr:      model.ErrOrderNotFound,
 		},
 		{
 			name: "polling_accrual_status_code_429",
-			ac: accrualResp{
-				Order:  7992723465,
-				Status: "NEW",
+			ac: model.AccrualResp{
+				Order:  orderID,
+				Status: model.OrderStatusNew,
 			},
 			acStatusCode: http.StatusTooManyRequests,
 			wantErr:      model.ErrManyRequests,
 		},
 		{
 			name: "polling_accrual_status_code_200_REGISTERED",
-			ac: accrualResp{
-				Order:  7992723465,
-				Status: "REGISTERED",
+			ac: model.AccrualResp{
+				Order:  orderID,
+				Status: model.OrderStatusRegistered,
 			},
 			acStatusCode: http.StatusOK,
 			wantErr:      model.ErrOrderInProcess,
 		},
 		{
 			name: "polling_accrual_status_code_200_PROCESSING",
-			ac: accrualResp{
-				Order:  7992723465,
-				Status: "PROCESSING",
+			ac: model.AccrualResp{
+				Order:  orderID,
+				Status: model.OrderStatusProcessing,
 			},
 			acStatusCode: http.StatusOK,
 			wantErr:      model.ErrOrderInProcess,
 		},
 		{
 			name: "polling_accrual_status_code_200_INVALID",
-			ac: accrualResp{
-				Order:  7992723465,
-				Status: "INVALID",
+			ac: model.AccrualResp{
+				Order:  orderID,
+				Status: model.OrderStatusInvalid,
 			},
 			acStatusCode: http.StatusOK,
 		},
@@ -89,7 +90,7 @@ func TestPolling(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 
-			m.EXPECT().UpdateOrderInfo(context.Background(), tt.ac.Order, tt.ac.Status, gomock.Any()).Return(tt.wantErr).Times(1)
+			m.EXPECT().UpdateOrderInfo(context.Background(), tt.ac.Order, tt.ac.Status.String(), gomock.Any()).Return(tt.wantErr).Times(1)
 
 			// Start a local HTTP server
 			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {

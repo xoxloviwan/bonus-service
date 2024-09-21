@@ -141,16 +141,16 @@ func TestHandler_OrderList(t *testing.T) {
 			mockOrders: []model.Order{
 				{
 					ID:         9278923470,
-					Status:     "PROCESSED",
+					Status:     model.OrderStatusProcessed,
 					Accrual:    &accrual,
 					UploadedAt: time.Date(2020, 12, 10, 15, 15, 45, 0, time.FixedZone("UTC+3", 3*60*60)),
 				}, {
 					ID:         12345678903,
-					Status:     "PROCESSING",
+					Status:     model.OrderStatusProcessing,
 					UploadedAt: time.Date(2020, 12, 10, 15, 12, 1, 0, time.FixedZone("UTC+3", 3*60*60)),
 				}, {
 					ID:         346436439,
-					Status:     "INVALID",
+					Status:     model.OrderStatusInvalid,
 					UploadedAt: time.Date(2020, 12, 9, 16, 9, 53, 0, time.FixedZone("UTC+3", 3*60*60)),
 				}},
 		},

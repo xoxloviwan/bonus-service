@@ -19,13 +19,7 @@ import (
 var Downtime atomic.Uint64
 var RPM atomic.Uint64
 
-type accrualResp struct {
-	Order   int      `json:"order,string"`
-	Status  string   `json:"status"`
-	Accrual *float64 `json:"accrual,omitempty"`
-}
-
-//go:generate mockgen -destination ./internal/polling/store_mock.go -package polling gophermart/internal/polling Store
+//go:generate mockgen -destination ./store_mock.go -package polling gophermart/internal/polling Store
 type Store interface {
 	UpdateOrderInfo(ctx context.Context, orderID int, status string, accrual *float64) error
 }
@@ -33,7 +27,7 @@ type Store interface {
 func polling(ctx context.Context, store Store, accrualAddr string, orderID int) error {
 	url := fmt.Sprintf("%s/api/orders/%d", accrualAddr, orderID)
 
-	orderInfo := accrualResp{}
+	orderInfo := model.AccrualResp{}
 
 	client := resty.New()
 
@@ -77,10 +71,10 @@ func polling(ctx context.Context, store Store, accrualAddr string, orderID int) 
 		return err
 	}
 
-	if err := store.UpdateOrderInfo(ctx, orderID, orderInfo.Status, orderInfo.Accrual); err != nil {
+	if err := store.UpdateOrderInfo(ctx, orderID, orderInfo.Status.String(), orderInfo.Accrual); err != nil {
 		return err
 	}
-	if orderInfo.Status == "REGISTERED" || orderInfo.Status == "PROCESSING" {
+	if orderInfo.Status == model.OrderStatusRegistered || orderInfo.Status == model.OrderStatusProcessing {
 		return model.ErrOrderInProcess
 	}
 	return nil
