@@ -161,6 +161,14 @@ func TestHandler_OrderList(t *testing.T) {
 			},
 			mockOrders: []model.Order{},
 		},
+		{
+			name: "order_list_status_code_500",
+			want: want{
+				statusCode:  http.StatusInternalServerError,
+				contentType: "text/plain; charset=utf-8",
+			},
+			mockErr: errors.New("any unexpected error"),
+		},
 	}
 
 	userID := 77
@@ -201,6 +209,10 @@ func TestHandler_OrderList(t *testing.T) {
 
 			if tt.want.contentType != result.Header.Get("Content-Type") {
 				t.Errorf("got content type %v, want %v", result.Header.Get("Content-Type"), tt.want.contentType)
+			}
+
+			if result.StatusCode == http.StatusInternalServerError {
+				return
 			}
 
 			var gotBody []model.Order
