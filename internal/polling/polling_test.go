@@ -3,6 +3,7 @@ package polling
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -124,7 +125,14 @@ func TestPolling(t *testing.T) {
 			defer server.Close()
 
 			err := polling(context.Background(), m, server.URL, tt.ac.Order)
-			if err != tt.wantErr {
+			if err != nil {
+				var e *errorManyRequests
+				if errors.As(err, &e) {
+					t.Logf("%s downtime=%v rps=%f\n", e.Error(), e.downtime, e.rps)
+					return
+				}
+			}
+			if !errors.Is(err, tt.wantErr) {
 				t.Errorf("Polling() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})

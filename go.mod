@@ -15,6 +15,7 @@ require (
 	github.com/jackc/pgx/v5 v5.6.0
 	github.com/theplant/luhn v0.0.0-20170224032821-81a1a381387a
 	golang.org/x/crypto v0.27.0
+	golang.org/x/time v0.6.0
 )
 
 require (
