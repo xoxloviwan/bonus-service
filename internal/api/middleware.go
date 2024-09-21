@@ -43,13 +43,13 @@ func authMiddleware(h http.Handler) http.Handler {
 			return
 		}
 		auth = auth[7:] // cut 'Bearer ' prefix
-		userID, err := GetUserID(auth)
+		userID, err := getUserID(auth)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), userIDCtxKey{}, userID)
+		ctx := context.WithValue(r.Context(), userIDCtxKey{}, *userID)
 		r = r.WithContext(ctx)
 		h.ServeHTTP(w, r)
 	})

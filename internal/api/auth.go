@@ -145,11 +145,11 @@ func getUserID(tokenString string) (*int, error) {
 			return []byte(SecretKey), nil
 		})
 	if err != nil {
-		return -1, err
+		return nil, err
 	}
 
 	if !token.Valid {
-		return -1, errors.New("invalid token")
+		return nil, errors.New("invalid token")
 	}
-	return claims.UserID, nil
+	return &claims.UserID, nil
 }
