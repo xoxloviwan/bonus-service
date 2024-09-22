@@ -17,6 +17,7 @@ type Store struct {
 type User = model.User
 type Order = model.Order
 type OrderStatus = model.OrderStatus
+type Balance = model.Balance
 
 func NewStore(ctx context.Context, connString string) (*Store, error) {
 	dbpool, err := pgxpool.New(ctx, connString)
@@ -42,7 +43,8 @@ func (db *Store) CreateUsersTable(ctx context.Context) error {
 			id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 			login text NOT NULL UNIQUE,
 			password text NOT NULL,
-			sum double precision)`)
+			sum double precision,
+			writeoff double precision)`)
 	if err != nil {
 		return err
 	}
@@ -52,7 +54,7 @@ func (db *Store) CreateUsersTable(ctx context.Context) error {
 }
 
 func (db *Store) AddUser(ctx context.Context, u User) (int, error) {
-	row := db.QueryRow(ctx, "INSERT INTO users (login, password) VALUES ($1, $2) RETURNING id", u.Login, u.Hash)
+	row := db.QueryRow(ctx, "INSERT INTO users (login, password, sum, writeoff) VALUES ($1, $2, $3, $4) RETURNING id", u.Login, u.Hash, 0, 0)
 	err := row.Scan(&u.ID)
 	if err != nil {
 		return 0, err
@@ -79,6 +81,17 @@ func (db *Store) CreateOrdersTable(ctx context.Context) error {
 			uploaded_at timestamp with time zone NOT NULL,
 			processed_at timestamp with time zone,
 			accrual double precision)`) // accrual - сумма начисленных баллов за заказ, получаем из внешней системы
+	return err
+}
+
+func (db *Store) CreateWriteOffTable(ctx context.Context) error {
+	_, err := db.Exec(ctx,
+		`CREATE TABLE IF NOT EXISTS writeoff (
+			id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+			user_id bigint NOT NULL,
+			order_id bigint NOT NULL,
+			processed_at timestamp with time zone,			
+			sum double precision)`)
 	return err
 }
 
@@ -123,13 +136,21 @@ func (db *Store) AddOrder(ctx context.Context, orderID int, userID int) (model.O
 }
 
 func (db *Store) UpdateOrderInfo(ctx context.Context, info model.AccrualResp) error {
-	_, err := db.Exec(ctx, "UPDATE orders SET status = @status, processed_at = @processed_at, accrual = @accrual WHERE id = @id",
+	u := &User{}
+	row := db.QueryRow(ctx, "UPDATE orders SET status = @status, processed_at = @processed_at, accrual = @accrual WHERE id = @id RETURNING user_id",
 		pgx.NamedArgs{
 			"id":           info.Order,
 			"status":       info.Status,
 			"processed_at": time.Now(),
 			"accrual":      info.Accrual,
 		})
+	err := row.Scan(&u.ID)
+	if err != nil {
+		return err
+	}
+	if info.Status == model.OrderStatusProcessed {
+		_, err = db.Exec(ctx, "UPDATE users SET sum = sum + @sum WHERE id = @id", pgx.NamedArgs{"sum": info.Accrual, "id": u.ID})
+	}
 	return err
 }
 
@@ -158,4 +179,14 @@ func (db *Store) ListOrders(ctx context.Context, userID int) ([]Order, error) {
 	}
 
 	return orders, nil
+}
+
+func (db *Store) GetBalance(ctx context.Context, userID int) (*Balance, error) {
+	balance := Balance{}
+	row := db.QueryRow(ctx, "SELECT sum, writeoff FROM users WHERE id = @id", pgx.NamedArgs{"id": userID})
+	err := row.Scan(&balance.Sum, &balance.WriteOff)
+	if err != nil {
+		return &balance, err
+	}
+	return &balance, nil
 }

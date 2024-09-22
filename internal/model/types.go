@@ -69,3 +69,8 @@ func (s *OrderStatus) UnmarshalText(b []byte) error {
 	return fmt.Errorf("invalid order status: %s", b)
 
 }
+
+type Balance struct {
+	Sum      float64 `json:"current"`
+	WriteOff float64 `json:"withdrawn"`
+}

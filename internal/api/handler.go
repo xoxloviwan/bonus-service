@@ -18,6 +18,7 @@ import (
 type User = model.User
 type Order = model.Order
 type OrderStatus = model.OrderStatus
+type Balance = model.Balance
 
 //go:generate mockgen -destination ../mock/store_mock.go -package mock gophermart/internal/api Store
 type Store interface {
@@ -25,6 +26,7 @@ type Store interface {
 	GetUser(ctx context.Context, login string) (*User, error)
 	AddOrder(ctx context.Context, orderID int, userID int) (OrderStatus, error)
 	ListOrders(ctx context.Context, userID int) ([]Order, error)
+	GetBalance(ctx context.Context, userID int) (*Balance, error)
 }
 
 //go:generate mockgen -destination ./poller_mock.go -package api gophermart/internal/api Poller
@@ -100,18 +102,16 @@ func (h *Handler) OrderList(w http.ResponseWriter, r *http.Request) {
 	w.Write(resp)
 }
 
-type BalanceResponse struct {
-	Total   float64 `json:"current"`
-	Debited float64 `json:"withdrawn"`
-}
-
 func (h *Handler) Balance(w http.ResponseWriter, r *http.Request) {
-	fakeBalance := BalanceResponse{ //TODO
-		Total:   1000,
-		Debited: 0,
+	userID := r.Context().Value(userIDCtxKey{}).(int)
+	account, err := h.store.GetBalance(r.Context(), userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
 	}
+
 	w.Header().Set("Content-Type", "application/json")
-	resp, err := json.Marshal(fakeBalance)
+	resp, err := json.Marshal(&account)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
