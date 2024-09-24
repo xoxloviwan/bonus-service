@@ -17,6 +17,8 @@ func Router(h *Handler) http.Handler {
 
 	protectedGroup := apiRouter.Group()
 	protectedGroup.Use(authMiddleware)
+	protectedGroup.HandleFunc("POST /orders", h.NewOrder)
+	protectedGroup.HandleFunc("GET /orders", h.OrderList)
 	protectedGroup.HandleFunc("GET /balance", h.Balance)
 
 	return router

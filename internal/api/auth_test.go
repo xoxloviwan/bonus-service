@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"net/http"
 	"testing"
@@ -20,23 +21,25 @@ func setupHandler(t *testing.T) *Handler {
 
 	mockStore := mock.NewMockStore(ctrl)
 
-	return &Handler{store: mockStore}
+	mockPoller := NewMockPoller(ctrl)
+
+	return &Handler{store: mockStore, poller: mockPoller}
 }
 
 type want struct {
 	contentType string
 	statusCode  int
+	body        string
 }
 
 type authTescases []struct {
-	name       string
-	method     string
-	url        string
-	reqBody    string
-	mockuserID int
-	mockHash   []byte
-	mockErr    error
-	want       want
+	name     string
+	method   string
+	url      string
+	reqBody  string
+	mockUser User
+	mockErr  error
+	want     want
 }
 
 func TestHandler_Register(t *testing.T) {
@@ -85,9 +88,9 @@ func TestHandler_Register(t *testing.T) {
 			want: want{
 				statusCode: http.StatusConflict,
 			},
-			mockuserID: 0,
-			mockErr:    errors.New("failed to add user"),
-			reqBody:    `{"login": "user", "password": "123456"}`,
+			mockUser: User{ID: 0},
+			mockErr:  errors.New("failed to add user"),
+			reqBody:  `{"login": "user", "password": "123456"}`,
 		},
 	}
 	for _, tt := range tests {
@@ -102,7 +105,7 @@ func TestHandler_Register(t *testing.T) {
 
 			m := h.store.(*mock.MockStore)
 
-			m.EXPECT().AddUser(gomock.Any(), gomock.Any()).Return(tt.mockuserID, tt.mockErr).Times(1)
+			m.EXPECT().AddUser(context.Background(), gomock.Any()).Return(tt.mockUser.ID, tt.mockErr).Times(1)
 
 			h.Register(w, req)
 
@@ -126,7 +129,7 @@ func TestHandler_Login(t *testing.T) {
 				contentType: "application/json",
 				statusCode:  http.StatusOK,
 			},
-			mockHash: []byte("$2a$10$35jb2VUM8yhqH/NtLh.r7ujcLFJScQmu6XwRcTEuSENFbFxFn6eL2"),
+			mockUser: User{ID: 1, Login: "user", Hash: []byte("$2a$10$35jb2VUM8yhqH/NtLh.r7ujcLFJScQmu6XwRcTEuSENFbFxFn6eL2")},
 			reqBody: `{
 					"login": "user",
 					"password": "123456"
@@ -166,8 +169,8 @@ func TestHandler_Login(t *testing.T) {
 			want: want{
 				statusCode: http.StatusUnauthorized,
 			},
-			mockuserID: 0,
-			reqBody:    `{"login": "user", "password": "123456"}`,
+			mockUser: User{ID: 0},
+			reqBody:  `{"login": "user", "password": "123456"}`,
 		},
 	}
 	for _, tt := range tests {
@@ -182,7 +185,7 @@ func TestHandler_Login(t *testing.T) {
 
 			m := h.store.(*mock.MockStore)
 
-			m.EXPECT().GetUser(gomock.Any()).Return(tt.mockHash, tt.mockuserID, tt.mockErr).Times(1)
+			m.EXPECT().GetUser(context.Background(), gomock.Any()).Return(tt.mockUser, tt.mockErr).Times(1)
 
 			h.Login(w, req)
 
