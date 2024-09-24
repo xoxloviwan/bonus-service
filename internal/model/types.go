@@ -80,3 +80,8 @@ type Payment struct {
 	OrderID int     `json:"order,string"`
 	Sum     float64 `json:"sum"`
 }
+
+type PaymentFact struct {
+	Payment
+	ProcessedAt time.Time `json:"processed_at"`
+}

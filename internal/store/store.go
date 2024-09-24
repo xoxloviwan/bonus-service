@@ -19,6 +19,7 @@ type Order = model.Order
 type OrderStatus = model.OrderStatus
 type Balance = model.Balance
 type Payment = model.Payment
+type PaymentFact = model.PaymentFact
 
 func NewStore(ctx context.Context, connString string) (*Store, error) {
 	dbpool, err := pgxpool.New(ctx, connString)
@@ -229,4 +230,22 @@ func (db *Store) SpendBonus(ctx context.Context, userID int, payment Payment) er
 	}
 	_, err = tx.Exec(ctx, "UPDATE users SET sum = sum - @sum, writeoff = writeoff + @sum WHERE id = @id", pgx.NamedArgs{"sum": payment.Sum, "id": userID})
 	return err
+}
+
+func (db *Store) SpentBonusList(ctx context.Context, userID int) ([]PaymentFact, error) {
+	payments := []PaymentFact{}
+	rows, err := db.Query(ctx, "SELECT order_id, sum, processed_at FROM payments WHERE user_id = @user_id ORDER BY processed_at DESC", pgx.NamedArgs{"user_id": userID})
+	if err != nil {
+		return payments, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		payment := PaymentFact{}
+		err = rows.Scan(&payment.OrderID, &payment.Sum, &payment.ProcessedAt)
+		if err != nil {
+			return payments, err
+		}
+		payments = append(payments, payment)
+	}
+	return payments, nil
 }

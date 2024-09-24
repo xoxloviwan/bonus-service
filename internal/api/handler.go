@@ -20,6 +20,7 @@ type Order = model.Order
 type OrderStatus = model.OrderStatus
 type Balance = model.Balance
 type Payment = model.Payment
+type PaymentFact = model.PaymentFact
 
 //go:generate mockgen -destination ../mock/store_mock.go -package mock gophermart/internal/api Store
 type Store interface {
@@ -29,6 +30,7 @@ type Store interface {
 	ListOrders(ctx context.Context, userID int) ([]Order, error)
 	GetBalance(ctx context.Context, userID int) (*Balance, error)
 	SpendBonus(ctx context.Context, userID int, payment Payment) error
+	SpentBonusList(ctx context.Context, userID int) ([]PaymentFact, error)
 }
 
 //go:generate mockgen -destination ./poller_mock.go -package api gophermart/internal/api Poller
@@ -159,4 +161,24 @@ func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *Handler) PaymentList(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(userIDCtxKey{}).(int)
+	payments, err := h.store.SpentBonusList(r.Context(), userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(payments) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	resp, err := json.Marshal(payments)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(resp)
 }
