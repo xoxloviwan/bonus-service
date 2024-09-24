@@ -14,7 +14,7 @@ import (
 	"github.com/golang/mock/gomock"
 )
 
-type AccrualResp = model.AccrualResp
+type accrualResp = model.AccrualResp
 
 func setupMock(t *testing.T) *MockStore {
 
@@ -32,13 +32,13 @@ func TestPolling(t *testing.T) {
 
 	tests := []struct {
 		name         string
-		ac           AccrualResp
+		ac           accrualResp
 		acStatusCode int
 		wantErr      error
 	}{
 		{
 			name: "polling_accrual_status_code_200_PROCESSED",
-			ac: AccrualResp{
+			ac: accrualResp{
 				Order:   orderID,
 				Status:  model.OrderStatusProcessed,
 				Accrual: &accrual,
@@ -47,7 +47,7 @@ func TestPolling(t *testing.T) {
 		},
 		{
 			name: "polling_accrual_status_code_204",
-			ac: AccrualResp{
+			ac: accrualResp{
 				Order:  orderID,
 				Status: model.OrderStatusNew,
 			},
@@ -56,7 +56,7 @@ func TestPolling(t *testing.T) {
 		},
 		{
 			name: "polling_accrual_status_code_429",
-			ac: AccrualResp{
+			ac: accrualResp{
 				Order:  orderID,
 				Status: model.OrderStatusNew,
 			},
@@ -65,7 +65,7 @@ func TestPolling(t *testing.T) {
 		},
 		{
 			name: "polling_accrual_status_code_200_REGISTERED",
-			ac: AccrualResp{
+			ac: accrualResp{
 				Order:  orderID,
 				Status: model.OrderStatusRegistered,
 			},
@@ -74,7 +74,7 @@ func TestPolling(t *testing.T) {
 		},
 		{
 			name: "polling_accrual_status_code_200_PROCESSING",
-			ac: AccrualResp{
+			ac: accrualResp{
 				Order:  orderID,
 				Status: model.OrderStatusProcessing,
 			},
@@ -83,7 +83,7 @@ func TestPolling(t *testing.T) {
 		},
 		{
 			name: "polling_accrual_status_code_200_INVALID",
-			ac: AccrualResp{
+			ac: accrualResp{
 				Order:  orderID,
 				Status: model.OrderStatusInvalid,
 			},
