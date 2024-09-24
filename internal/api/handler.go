@@ -19,6 +19,7 @@ type User = model.User
 type Order = model.Order
 type OrderStatus = model.OrderStatus
 type Balance = model.Balance
+type Payment = model.Payment
 
 //go:generate mockgen -destination ../mock/store_mock.go -package mock gophermart/internal/api Store
 type Store interface {
@@ -27,6 +28,7 @@ type Store interface {
 	AddOrder(ctx context.Context, orderID int, userID int) (OrderStatus, error)
 	ListOrders(ctx context.Context, userID int) ([]Order, error)
 	GetBalance(ctx context.Context, userID int) (*Balance, error)
+	SpendBonus(ctx context.Context, userID int, payment Payment) error
 }
 
 //go:generate mockgen -destination ./poller_mock.go -package api gophermart/internal/api Poller
@@ -117,4 +119,44 @@ func (h *Handler) Balance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	w.Write(resp)
+}
+
+func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
+	slog.Debug(string(body))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	var payment Payment
+	err = json.Unmarshal(body, &payment)
+	slog.Debug(fmt.Sprintf("Payment: %+v", payment))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if payment.OrderID == 0 {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
+	if payment.Sum == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if !luhn.Valid(payment.OrderID) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
+	userID := r.Context().Value(userIDCtxKey{}).(int)
+	err = h.store.SpendBonus(r.Context(), userID, payment)
+	if err != nil {
+		if errors.Is(err, model.ErrNotEnough) {
+			http.Error(w, err.Error(), http.StatusPaymentRequired)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
 }

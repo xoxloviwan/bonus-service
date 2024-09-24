@@ -18,6 +18,7 @@ type User = model.User
 type Order = model.Order
 type OrderStatus = model.OrderStatus
 type Balance = model.Balance
+type Payment = model.Payment
 
 func NewStore(ctx context.Context, connString string) (*Store, error) {
 	dbpool, err := pgxpool.New(ctx, connString)
@@ -30,6 +31,10 @@ func NewStore(ctx context.Context, connString string) (*Store, error) {
 		return &Store{}, err
 	}
 	err = st.CreateOrdersTable(ctx)
+	if err != nil {
+		return &Store{}, err
+	}
+	err = st.CreatePaymentsTable(ctx)
 	if err != nil {
 		return &Store{}, err
 	}
@@ -84,12 +89,12 @@ func (db *Store) CreateOrdersTable(ctx context.Context) error {
 	return err
 }
 
-func (db *Store) CreateWriteOffTable(ctx context.Context) error {
+func (db *Store) CreatePaymentsTable(ctx context.Context) error {
 	_, err := db.Exec(ctx,
-		`CREATE TABLE IF NOT EXISTS writeoff (
+		`CREATE TABLE IF NOT EXISTS payments (
 			id bigint GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
 			user_id bigint NOT NULL,
-			order_id bigint NOT NULL,
+			order_id bigint NOT NULL UNIQUE,
 			processed_at timestamp with time zone,			
 			sum double precision)`)
 	return err
@@ -189,4 +194,39 @@ func (db *Store) GetBalance(ctx context.Context, userID int) (*Balance, error) {
 		return &balance, err
 	}
 	return &balance, nil
+}
+
+func (db *Store) SpendBonus(ctx context.Context, userID int, payment Payment) error {
+	tx, err := db.Begin(ctx)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		if err != nil {
+			_ = tx.Rollback(ctx)
+			return
+		}
+		err = tx.Commit(ctx)
+	}()
+	row := tx.QueryRow(ctx, "SELECT sum FROM users WHERE id = @id FOR UPDATE", pgx.NamedArgs{"id": userID})
+	var sum float64
+	err = row.Scan(&sum)
+	if err != nil {
+		return err
+	}
+	if sum < payment.Sum {
+		return model.ErrNotEnough
+	}
+	_, err = tx.Exec(ctx, "INSERT INTO payments (user_id, order_id, processed_at, sum) VALUES (@user_id, @order_id, @processed_at, @sum)",
+		pgx.NamedArgs{
+			"user_id":      userID,
+			"order_id":     payment.OrderID,
+			"processed_at": time.Now(),
+			"sum":          payment.Sum,
+		})
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(ctx, "UPDATE users SET sum = sum - @sum, writeoff = writeoff + @sum WHERE id = @id", pgx.NamedArgs{"sum": payment.Sum, "id": userID})
+	return err
 }

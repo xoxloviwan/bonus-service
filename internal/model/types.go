@@ -13,6 +13,7 @@ var (
 	ErrManyRequests   = errors.New("too many requests to accrual system")
 	ErrOrderNotFound  = errors.New("order not found in accrual system")
 	ErrOrderInProcess = errors.New("order in process")
+	ErrNotEnough      = errors.New("not enough funds on balance")
 )
 
 type User struct {
@@ -73,4 +74,9 @@ func (s *OrderStatus) UnmarshalText(b []byte) error {
 type Balance struct {
 	Sum      float64 `json:"current"`
 	WriteOff float64 `json:"withdrawn"`
+}
+
+type Payment struct {
+	OrderID int     `json:"order,string"`
+	Sum     float64 `json:"sum"`
 }
