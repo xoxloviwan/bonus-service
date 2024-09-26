@@ -22,7 +22,7 @@ type orderCase struct {
 	reqBody    string
 	mockErr    error
 	want       want
-	mockOrders []model.Order
+	mockOrders []Order
 }
 
 func TestHandler_NewOrder(t *testing.T) {
@@ -138,7 +138,7 @@ func TestHandler_OrderList(t *testing.T) {
 					}
     		]`,
 			},
-			mockOrders: []model.Order{
+			mockOrders: []Order{
 				{
 					ID:         9278923470,
 					Status:     model.OrderStatusProcessed,
@@ -159,7 +159,7 @@ func TestHandler_OrderList(t *testing.T) {
 			want: want{
 				statusCode: http.StatusNoContent,
 			},
-			mockOrders: []model.Order{},
+			mockOrders: []Order{},
 		},
 		{
 			name: "order_list_status_code_500",
@@ -177,7 +177,7 @@ func TestHandler_OrderList(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			h := setupHandler(t)
 
-			req := httptest.NewRequest("GET", "/api/user/orders", nil)
+			req := httptest.NewRequest(http.MethodGet, "/api/user/orders", nil)
 			ctx := context.WithValue(req.Context(), userIDCtxKey{}, userID)
 			req = req.WithContext(ctx)
 
@@ -212,8 +212,8 @@ func TestHandler_OrderList(t *testing.T) {
 				return
 			}
 
-			var gotBody []model.Order
-			var wantBody []model.Order
+			var gotBody []Order
+			var wantBody []Order
 
 			err = json.Unmarshal(resBody, &gotBody)
 			if err != nil {
@@ -234,27 +234,28 @@ func TestHandler_OrderList(t *testing.T) {
 func TestHandler_Balance(t *testing.T) {
 	tests := []struct {
 		name        string
-		wantStatus  int
-		wantBody    string
+		want        want
 		mockErr     error
-		mockBalance *model.Balance
-		contentType string
+		mockBalance *Balance
 	}{
 		{
-			name:       "success",
-			wantStatus: http.StatusOK,
-			wantBody:   `{"current":500.5,"withdrawn":42}`,
-			mockBalance: &model.Balance{
+			name: "success",
+			want: want{
+				statusCode:  http.StatusOK,
+				contentType: "application/json",
+				body:        `{"current":500.5,"withdrawn":42}`,
+			},
+			mockBalance: &Balance{
 				Sum:      500.5,
 				WriteOff: 42,
 			},
-			contentType: "application/json",
 		},
 		{
-			name:        "internal_server_error",
-			wantStatus:  http.StatusInternalServerError,
-			mockErr:     errors.New("internal server error"),
-			contentType: "",
+			name: "internal_server_error",
+			want: want{
+				statusCode: http.StatusInternalServerError,
+			},
+			mockErr: errors.New("internal server error"),
 		},
 	}
 
@@ -265,7 +266,7 @@ func TestHandler_Balance(t *testing.T) {
 
 			h := setupHandler(t)
 
-			req := httptest.NewRequest("GET", "/api/user/balance", nil)
+			req := httptest.NewRequest(http.MethodGet, "/api/user/balance", nil)
 			ctx := context.WithValue(req.Context(), userIDCtxKey{}, userID)
 			req = req.WithContext(ctx)
 
@@ -279,23 +280,140 @@ func TestHandler_Balance(t *testing.T) {
 			result := w.Result()
 			defer result.Body.Close()
 
-			if tt.wantStatus != result.StatusCode {
-				t.Errorf("got status %v, want %v", result.StatusCode, tt.wantStatus)
+			if tt.want.statusCode != result.StatusCode {
+				t.Errorf("got status %v, want %v", result.StatusCode, tt.want.statusCode)
 			}
 
-			if result.StatusCode == http.StatusOK {
-				resBody, err := io.ReadAll(result.Body)
-				if err != nil {
-					t.Fatal(err)
-				}
+			if result.StatusCode == http.StatusInternalServerError {
+				return
+			}
 
-				if tt.contentType != result.Header.Get("Content-Type") {
-					t.Errorf("got content type %v, want %v", result.Header.Get("Content-Type"), tt.contentType)
-				}
+			resBody, err := io.ReadAll(result.Body)
+			if err != nil {
+				t.Fatal(err)
+			}
 
-				if diff := cmp.Diff(tt.wantBody, string(resBody)); diff != "" {
-					t.Errorf("Body mismatch (-want +got):\n%s", diff)
-				}
+			if tt.want.contentType != result.Header.Get("Content-Type") {
+				t.Errorf("got content type %v, want %v", result.Header.Get("Content-Type"), tt.want.contentType)
+			}
+
+			var gotBody *Balance
+			var wantBody *Balance
+
+			err = json.Unmarshal(resBody, &gotBody)
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = json.Unmarshal([]byte(tt.want.body), &wantBody)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if diff := cmp.Diff(wantBody, gotBody); diff != "" {
+				t.Errorf("Body mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestHandler_PaymentList(t *testing.T) {
+
+	tests := []struct {
+		name         string
+		want         want
+		mockErr      error
+		mockPayments []PaymentFact
+	}{
+		{
+			name: "success",
+			want: want{
+				statusCode:  http.StatusOK,
+				contentType: "application/json",
+				body: `[
+								{
+									"order": "2377225624",
+									"sum": 500,
+									"processed_at": "2020-12-09T16:09:57+03:00"
+								}
+							]`,
+			},
+			mockPayments: []PaymentFact{
+				{
+					Payment: Payment{
+						OrderID: 2377225624,
+						Sum:     500,
+					},
+					ProcessedAt: time.Date(2020, 12, 9, 16, 9, 57, 0, time.FixedZone("UTC+3", 3*60*60)),
+				},
+			},
+		},
+		{
+			name: "internal_server_error",
+			want: want{
+				statusCode: http.StatusInternalServerError,
+			},
+			mockErr: errors.New("internal server error"),
+		},
+		{
+			name: "no_content",
+			want: want{
+				statusCode: http.StatusNoContent,
+			},
+			mockPayments: []PaymentFact{},
+		},
+	}
+	userID := 77
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			h := setupHandler(t)
+
+			req := httptest.NewRequest(http.MethodGet, "/api/user/withdrawals", nil)
+			ctx := context.WithValue(req.Context(), userIDCtxKey{}, userID)
+			req = req.WithContext(ctx)
+
+			w := httptest.NewRecorder()
+
+			m := h.store.(*mock.MockStore)
+
+			m.EXPECT().SpentBonusList(ctx, userID).Return(tt.mockPayments, tt.mockErr).Times(1)
+			h.PaymentList(w, req)
+
+			result := w.Result()
+			defer result.Body.Close()
+
+			if tt.want.statusCode != result.StatusCode {
+				t.Errorf("got status %v, want %v", result.StatusCode, tt.want.statusCode)
+			}
+
+			if result.StatusCode == http.StatusInternalServerError || result.StatusCode == http.StatusNoContent {
+				return
+			}
+
+			resBody, err := io.ReadAll(result.Body)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if tt.want.contentType != result.Header.Get("Content-Type") {
+				t.Errorf("got content type %v, want %v", result.Header.Get("Content-Type"), tt.want.contentType)
+			}
+
+			var gotBody []PaymentFact
+			var wantBody []PaymentFact
+
+			err = json.Unmarshal(resBody, &gotBody)
+			if err != nil {
+				t.Fatal(err)
+			}
+			err = json.Unmarshal([]byte(tt.want.body), &wantBody)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			if diff := cmp.Diff(wantBody, gotBody); diff != "" {
+				t.Errorf("Body mismatch (-want +got):\n%s", diff)
 			}
 		})
 	}
