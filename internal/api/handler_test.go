@@ -177,10 +177,7 @@ func TestHandler_OrderList(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			h := setupHandler(t)
 
-			req, err := http.NewRequest("GET", "/api/user/orders", nil)
-			if err != nil {
-				t.Fatal(err)
-			}
+			req := httptest.NewRequest("GET", "/api/user/orders", nil)
 			ctx := context.WithValue(req.Context(), userIDCtxKey{}, userID)
 			req = req.WithContext(ctx)
 
@@ -229,6 +226,79 @@ func TestHandler_OrderList(t *testing.T) {
 
 			if diff := cmp.Diff(wantBody, gotBody); diff != "" {
 				t.Errorf("Body mismatch (-want +got):\n%s", diff)
+			}
+		})
+	}
+}
+
+func TestHandler_Balance(t *testing.T) {
+	type args struct {
+		w http.ResponseWriter
+		r *http.Request
+	}
+	tests := []struct {
+		name        string
+		wantStatus  int
+		wantBody    string
+		mockErr     error
+		mockBalance *model.Balance
+		contentType string
+	}{
+		{
+			name:       "success",
+			wantStatus: http.StatusOK,
+			wantBody:   `{"current":500.5,"withdrawn":42}`,
+			mockBalance: &model.Balance{
+				Sum:      500.5,
+				WriteOff: 42,
+			},
+			contentType: "application/json",
+		},
+		{
+			name:        "internal_server_error",
+			wantStatus:  http.StatusInternalServerError,
+			mockErr:     errors.New("internal server error"),
+			contentType: "",
+		},
+	}
+
+	userID := 77
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			h := setupHandler(t)
+
+			req := httptest.NewRequest("GET", "/api/user/balance", nil)
+			ctx := context.WithValue(req.Context(), userIDCtxKey{}, userID)
+			req = req.WithContext(ctx)
+
+			w := httptest.NewRecorder()
+
+			m := h.store.(*mock.MockStore)
+
+			m.EXPECT().GetBalance(ctx, userID).Return(tt.mockBalance, tt.mockErr).Times(1)
+			h.Balance(w, req)
+
+			result := w.Result()
+
+			if tt.wantStatus != result.StatusCode {
+				t.Errorf("got status %v, want %v", result.StatusCode, tt.wantStatus)
+			}
+
+			if result.StatusCode == http.StatusOK {
+				resBody, err := io.ReadAll(result.Body)
+				if err != nil {
+					t.Fatal(err)
+				}
+
+				if tt.contentType != result.Header.Get("Content-Type") {
+					t.Errorf("got content type %v, want %v", result.Header.Get("Content-Type"), tt.contentType)
+				}
+
+				if diff := cmp.Diff(tt.wantBody, string(resBody)); diff != "" {
+					t.Errorf("Body mismatch (-want +got):\n%s", diff)
+				}
 			}
 		})
 	}
