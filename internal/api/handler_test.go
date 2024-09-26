@@ -281,6 +281,7 @@ func TestHandler_Balance(t *testing.T) {
 			h.Balance(w, req)
 
 			result := w.Result()
+			defer result.Body.Close()
 
 			if tt.wantStatus != result.StatusCode {
 				t.Errorf("got status %v, want %v", result.StatusCode, tt.wantStatus)
