@@ -418,3 +418,91 @@ func TestHandler_PaymentList(t *testing.T) {
 		})
 	}
 }
+
+func TestHandler_Pay(t *testing.T) {
+	tests := []struct {
+		name        string
+		want        want
+		reqBody     string
+		mockErr     error
+		mockPayment Payment
+	}{
+		{
+			name: "success",
+			want: want{
+				statusCode: http.StatusOK,
+			},
+			reqBody: `{
+				"order": "2377225624",
+				"sum": 751
+			}`,
+			mockPayment: Payment{
+				OrderID: 2377225624,
+				Sum:     751,
+			},
+		},
+		{
+			name: "internal_server_error",
+			want: want{
+				statusCode: http.StatusInternalServerError,
+			},
+			mockErr: errors.New("internal server error"),
+		},
+		{
+			name: "not_enough_funds",
+			reqBody: `{
+				"order": "2377225624",
+				"sum": 751
+			}`,
+			mockPayment: Payment{
+				OrderID: 2377225624,
+				Sum:     751,
+			},
+			want: want{
+				statusCode: http.StatusPaymentRequired,
+			},
+			mockErr: model.ErrNotEnough,
+		},
+		{
+			name: "wrong_order_id",
+			reqBody: `{
+				"order": "11111",
+				"sum": 751
+			}`,
+			mockPayment: Payment{
+				OrderID: 11111,
+				Sum:     751,
+			},
+			want: want{
+				statusCode: http.StatusUnprocessableEntity,
+			},
+		},
+	}
+	userID := 77
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			h := setupHandler(t)
+
+			reqBody := bytes.NewBuffer([]byte(tt.reqBody))
+			req := httptest.NewRequest(http.MethodPost, "/api/user/balance/withdraw", reqBody)
+			ctx := context.WithValue(req.Context(), userIDCtxKey{}, userID)
+			req = req.WithContext(ctx)
+
+			w := httptest.NewRecorder()
+
+			m := h.store.(*mock.MockStore)
+
+			m.EXPECT().SpendBonus(ctx, userID, tt.mockPayment).Return(tt.mockErr).Times(1)
+			h.Pay(w, req)
+
+			result := w.Result()
+			defer result.Body.Close()
+
+			if tt.want.statusCode != result.StatusCode {
+				t.Errorf("got status %v, want %v", result.StatusCode, tt.want.statusCode)
+			}
+		})
+	}
+}
