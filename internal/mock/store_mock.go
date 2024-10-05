@@ -36,10 +36,10 @@ func (m *MockStore) EXPECT() *MockStoreMockRecorder {
 }
 
 // AddOrder mocks base method.
-func (m *MockStore) AddOrder(arg0 context.Context, arg1, arg2 int) (string, error) {
+func (m *MockStore) AddOrder(arg0 context.Context, arg1, arg2 int) (model.OrderStatus, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "AddOrder", arg0, arg1, arg2)
-	ret0, _ := ret[0].(string)
+	ret0, _ := ret[0].(model.OrderStatus)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -65,11 +65,26 @@ func (mr *MockStoreMockRecorder) AddUser(arg0, arg1 interface{}) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "AddUser", reflect.TypeOf((*MockStore)(nil).AddUser), arg0, arg1)
 }
 
+// GetBalance mocks base method.
+func (m *MockStore) GetBalance(arg0 context.Context, arg1 int) (*model.Balance, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetBalance", arg0, arg1)
+	ret0, _ := ret[0].(*model.Balance)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetBalance indicates an expected call of GetBalance.
+func (mr *MockStoreMockRecorder) GetBalance(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetBalance", reflect.TypeOf((*MockStore)(nil).GetBalance), arg0, arg1)
+}
+
 // GetUser mocks base method.
-func (m *MockStore) GetUser(arg0 context.Context, arg1 string) (model.User, error) {
+func (m *MockStore) GetUser(arg0 context.Context, arg1 string) (*model.User, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetUser", arg0, arg1)
-	ret0, _ := ret[0].(model.User)
+	ret0, _ := ret[0].(*model.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -93,4 +108,33 @@ func (m *MockStore) ListOrders(arg0 context.Context, arg1 int) ([]model.Order, e
 func (mr *MockStoreMockRecorder) ListOrders(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ListOrders", reflect.TypeOf((*MockStore)(nil).ListOrders), arg0, arg1)
+}
+
+// SpendBonus mocks base method.
+func (m *MockStore) SpendBonus(arg0 context.Context, arg1 int, arg2 model.Payment) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SpendBonus", arg0, arg1, arg2)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SpendBonus indicates an expected call of SpendBonus.
+func (mr *MockStoreMockRecorder) SpendBonus(arg0, arg1, arg2 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SpendBonus", reflect.TypeOf((*MockStore)(nil).SpendBonus), arg0, arg1, arg2)
+}
+
+// SpentBonusList mocks base method.
+func (m *MockStore) SpentBonusList(arg0 context.Context, arg1 int) ([]model.PaymentFact, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SpentBonusList", arg0, arg1)
+	ret0, _ := ret[0].([]model.PaymentFact)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// SpentBonusList indicates an expected call of SpentBonusList.
+func (mr *MockStoreMockRecorder) SpentBonusList(arg0, arg1 interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SpentBonusList", reflect.TypeOf((*MockStore)(nil).SpentBonusList), arg0, arg1)
 }

@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 
+	"gophermart/internal/helpers"
 	"gophermart/internal/model"
 
 	"github.com/theplant/luhn"
@@ -16,14 +17,23 @@ import (
 
 type User = model.User
 type Order = model.Order
+type OrderStatus = model.OrderStatus
+type Balance = model.Balance
+type Payment = model.Payment
+type PaymentFact = model.PaymentFact
 
+//go:generate mockgen -destination ../mock/store_mock.go -package mock gophermart/internal/api Store
 type Store interface {
 	AddUser(ctx context.Context, u User) (int, error)
-	GetUser(ctx context.Context, login string) (User, error)
-	AddOrder(ctx context.Context, orderID int, userID int) (string, error)
+	GetUser(ctx context.Context, login string) (*User, error)
+	AddOrder(ctx context.Context, orderID int, userID int) (OrderStatus, error)
 	ListOrders(ctx context.Context, userID int) ([]Order, error)
+	GetBalance(ctx context.Context, userID int) (*Balance, error)
+	SpendBonus(ctx context.Context, userID int, payment Payment) error
+	SpentBonusList(ctx context.Context, userID int) ([]PaymentFact, error)
 }
 
+//go:generate mockgen -destination ./poller_mock.go -package api gophermart/internal/api Poller
 type Poller interface {
 	Push(orderID int)
 }
@@ -33,29 +43,8 @@ type Handler struct {
 	poller Poller
 }
 
-// borrowed from benchfmt/internal/bytesconv/atoi.go
-// atoi is equivalent to ParseInt(s, 10, 0), converted to type int.
-func atoi(s []byte) (int, error) {
-	const intSize = 32 << (^uint(0) >> 63)
-
-	sLen := len(s)
-	if intSize == 32 && (0 < sLen && sLen < 10) ||
-		intSize == 64 && (0 < sLen && sLen < 19) {
-		// Fast path for small integers that fit int type.
-		s0 := s
-
-		n := 0
-		for _, ch := range s {
-			ch -= '0'
-			if ch > 9 {
-				return 0, fmt.Errorf("atoi: invalid bytes: %q", string(s0))
-			}
-			n = n*10 + int(ch)
-		}
-
-		return n, nil
-	}
-	return 0, errors.New("atoi: not realized")
+func NewHandler(store Store, poller Poller) *Handler {
+	return &Handler{store, poller}
 }
 
 func (h *Handler) NewOrder(w http.ResponseWriter, r *http.Request) {
@@ -64,7 +53,7 @@ func (h *Handler) NewOrder(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	orderID, err := atoi(data)
+	orderID, err := helpers.Atoi(data)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -75,11 +64,11 @@ func (h *Handler) NewOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	userID := r.Context().Value(userIDCtxKey{}).(int)
-	var status string
+	var status OrderStatus
 	status, err = h.store.AddOrder(r.Context(), orderID, userID)
 	if err != nil {
 		if errors.Is(err, model.ErrOldOrder) {
-			if status != "PROCESSED" && status != "INVALID" {
+			if status != model.OrderStatusProcessed && status != model.OrderStatusInvalid {
 				h.poller.Push(orderID)
 			}
 			w.WriteHeader(http.StatusOK)
@@ -117,25 +106,79 @@ func (h *Handler) OrderList(w http.ResponseWriter, r *http.Request) {
 	w.Write(resp)
 }
 
-func NewHandler(store Store, poller Poller) *Handler {
-	return &Handler{store, poller}
-}
-
-type BalanceResponse struct {
-	Total   float64 `json:"current"`
-	Debited float64 `json:"withdrawn"`
-}
-
 func (h *Handler) Balance(w http.ResponseWriter, r *http.Request) {
-	fakeBalance := BalanceResponse{ //TODO
-		Total:   1000,
-		Debited: 0,
-	}
-	w.Header().Set("Content-Type", "application/json")
-	resp, err := json.Marshal(fakeBalance)
+	userID := r.Context().Value(userIDCtxKey{}).(int)
+	account, err := h.store.GetBalance(r.Context(), userID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
+
+	w.Header().Set("Content-Type", "application/json")
+	resp, err := json.Marshal(&account)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Write(resp)
+}
+
+func (h *Handler) Pay(w http.ResponseWriter, r *http.Request) {
+	body, err := io.ReadAll(r.Body)
+	slog.Debug(string(body))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	var payment Payment
+	err = json.Unmarshal(body, &payment)
+	slog.Debug(fmt.Sprintf("Payment: %+v", payment))
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if payment.OrderID == 0 {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
+	if payment.Sum == 0 {
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	if !luhn.Valid(payment.OrderID) {
+		w.WriteHeader(http.StatusUnprocessableEntity)
+		return
+	}
+	userID := r.Context().Value(userIDCtxKey{}).(int)
+	err = h.store.SpendBonus(r.Context(), userID, payment)
+	if err != nil {
+		if errors.Is(err, model.ErrNotEnough) {
+			http.Error(w, err.Error(), http.StatusPaymentRequired)
+			return
+		}
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *Handler) PaymentList(w http.ResponseWriter, r *http.Request) {
+	userID := r.Context().Value(userIDCtxKey{}).(int)
+	payments, err := h.store.SpentBonusList(r.Context(), userID)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	if len(payments) == 0 {
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+	resp, err := json.Marshal(payments)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
 	w.Write(resp)
 }

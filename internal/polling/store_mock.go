@@ -6,6 +6,7 @@ package polling
 
 import (
 	context "context"
+	model "gophermart/internal/model"
 	reflect "reflect"
 
 	gomock "github.com/golang/mock/gomock"
@@ -35,15 +36,15 @@ func (m *MockStore) EXPECT() *MockStoreMockRecorder {
 }
 
 // UpdateOrderInfo mocks base method.
-func (m *MockStore) UpdateOrderInfo(arg0 context.Context, arg1 int, arg2 string, arg3 *float64) error {
+func (m *MockStore) UpdateOrderInfo(arg0 context.Context, arg1 model.AccrualResp) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateOrderInfo", arg0, arg1, arg2, arg3)
+	ret := m.ctrl.Call(m, "UpdateOrderInfo", arg0, arg1)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateOrderInfo indicates an expected call of UpdateOrderInfo.
-func (mr *MockStoreMockRecorder) UpdateOrderInfo(arg0, arg1, arg2, arg3 interface{}) *gomock.Call {
+func (mr *MockStoreMockRecorder) UpdateOrderInfo(arg0, arg1 interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrderInfo", reflect.TypeOf((*MockStore)(nil).UpdateOrderInfo), arg0, arg1, arg2, arg3)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateOrderInfo", reflect.TypeOf((*MockStore)(nil).UpdateOrderInfo), arg0, arg1)
 }

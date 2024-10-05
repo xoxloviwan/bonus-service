@@ -20,6 +20,8 @@ func Router(h *Handler) http.Handler {
 	protectedGroup.HandleFunc("POST /orders", h.NewOrder)
 	protectedGroup.HandleFunc("GET /orders", h.OrderList)
 	protectedGroup.HandleFunc("GET /balance", h.Balance)
+	protectedGroup.HandleFunc("POST /balance/withdraw", h.Pay)
+	protectedGroup.HandleFunc("GET /withdrawals", h.PaymentList)
 
 	return router
 }

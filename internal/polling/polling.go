@@ -8,31 +8,32 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
-
-	"sync/atomic"
+	"time"
 
 	"gophermart/internal/model"
 
 	"github.com/go-resty/resty/v2"
 )
 
-var Downtime atomic.Uint64
-var RPM atomic.Uint64
-
-type accrualResp struct {
-	Order   int      `json:"order,string"`
-	Status  string   `json:"status"`
-	Accrual *float64 `json:"accrual,omitempty"`
+type errorManyRequests struct {
+	downtime time.Duration
+	rps      float64
+	error
 }
 
+func newErrorManyRequests(downtime time.Duration, rps float64) *errorManyRequests {
+	return &errorManyRequests{downtime, rps, model.ErrManyRequests}
+}
+
+//go:generate mockgen -destination ./store_mock.go -package polling gophermart/internal/polling Store
 type Store interface {
-	UpdateOrderInfo(ctx context.Context, orderID int, status string, accrual *float64) error
+	UpdateOrderInfo(ctx context.Context, orderInfo model.AccrualResp) error
 }
 
 func polling(ctx context.Context, store Store, accrualAddr string, orderID int) error {
 	url := fmt.Sprintf("%s/api/orders/%d", accrualAddr, orderID)
 
-	orderInfo := accrualResp{}
+	orderInfo := model.AccrualResp{}
 
 	client := resty.New()
 
@@ -55,17 +56,18 @@ func polling(ctx context.Context, store Store, accrualAddr string, orderID int) 
 		if err != nil {
 			return fmt.Errorf("unexpected header Retry-After: %s", resp.Header().Get("Retry-After"))
 		}
-		Downtime.Store(uint64(retryAfter))
 		expr := regexp.MustCompile(`No more than (\d+) requests per minute allowed`)
 		matches := expr.FindStringSubmatch(resp.String())
+		var rps float64 = 0
 		if len(matches) >= 1 {
 			rpm, err := strconv.Atoi(matches[1])
 			if err != nil {
 				return err
 			}
-			RPM.Store(uint64(rpm))
+			rps = float64(rpm) / 60
 		}
-		return model.ErrManyRequests
+		downtime := time.Duration(retryAfter) * time.Second
+		return newErrorManyRequests(downtime, rps)
 	}
 
 	if resp.StatusCode() != http.StatusOK {
@@ -76,10 +78,10 @@ func polling(ctx context.Context, store Store, accrualAddr string, orderID int) 
 		return err
 	}
 
-	if err := store.UpdateOrderInfo(ctx, orderID, orderInfo.Status, orderInfo.Accrual); err != nil {
+	if err := store.UpdateOrderInfo(ctx, orderInfo); err != nil {
 		return err
 	}
-	if orderInfo.Status == "REGISTERED" || orderInfo.Status == "PROCESSING" {
+	if orderInfo.Status == model.OrderStatusRegistered || orderInfo.Status == model.OrderStatusProcessing {
 		return model.ErrOrderInProcess
 	}
 	return nil

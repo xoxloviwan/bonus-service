@@ -4,6 +4,7 @@ import (
 	"context"
 	"log/slog"
 	"net/http"
+	"strings"
 
 	"github.com/felixge/httpsnoop"
 	"github.com/google/uuid"
@@ -42,14 +43,14 @@ func authMiddleware(h http.Handler) http.Handler {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		auth = auth[7:] // cut 'Bearer ' prefix
-		userID, err := GetUserID(auth)
+		auth = strings.Replace(auth, "Bearer ", "", 1)
+		userID, err := getUserID(auth)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 
-		ctx := context.WithValue(r.Context(), userIDCtxKey{}, userID)
+		ctx := context.WithValue(r.Context(), userIDCtxKey{}, *userID)
 		r = r.WithContext(ctx)
 		h.ServeHTTP(w, r)
 	})

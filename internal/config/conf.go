@@ -24,6 +24,7 @@ type Config struct {
 	DatabaseURI          string `envDefault:""`
 	AccrualSystemAddress string `envDefault:""`
 	Level                string `envDefault:""`
+	PollInterval         int    `envDefault:"2"` // in seconds
 }
 
 func InitConfig() (Config, error) {

@@ -135,21 +135,21 @@ func BuildJWT(user int) (string, error) {
 	return tokenString, nil
 }
 
-func GetUserID(tokenString string) (int, error) {
+func getUserID(tokenString string) (*int, error) {
 	claims := &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claims,
-		func(t *jwt.Token) (interface{}, error) {
+		func(t *jwt.Token) (any, error) {
 			if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 				return nil, fmt.Errorf("unexpected signing method: %v", t.Header["alg"])
 			}
 			return []byte(SecretKey), nil
 		})
 	if err != nil {
-		return -1, err
+		return nil, err
 	}
 
 	if !token.Valid {
-		return -1, errors.New("invalid token")
+		return nil, errors.New("invalid token")
 	}
-	return claims.UserID, nil
+	return &claims.UserID, nil
 }
