@@ -1,3 +1,4 @@
+// Package model includes all required types
 package model
 
 import (

@@ -1,3 +1,4 @@
+// Package config provides config settings and launch flags
 package config
 
 import (

@@ -1,3 +1,4 @@
+// Package store implement api to postgres storage
 package store
 
 import (

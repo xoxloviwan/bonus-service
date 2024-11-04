@@ -1,3 +1,4 @@
+// Package helpers uses function borrowed from golang.org/x/perf/benchfmt/internal/bytesconv/atoi.go
 package helpers
 
 import (
@@ -5,8 +6,7 @@ import (
 	"fmt"
 )
 
-// borrowed from benchfmt/internal/bytesconv/atoi.go
-// atoi is equivalent to ParseInt(s, 10, 0), converted to type int.
+// Atoi is equivalent to ParseInt(s, 10, 0), converted to type int.
 func Atoi(s []byte) (int, error) {
 	const intSize = 32 << (^uint(0) >> 63)
 
